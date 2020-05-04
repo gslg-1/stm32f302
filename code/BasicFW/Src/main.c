@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-//#include "prg_mng.h"
+#include "prg_mng.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,17 +95,15 @@ uint8_t con_goon(void)
   return 1;
 }
 
-//transition trans_useLED_on = { con_goon , NULL };
-//transition trans_useLED_delay = { con_goon, NULL };
-//transition trans_useLED_off = { con_goon, NULL };
-//
-//state state_LED_on = {useLED_on, &trans_useLED_on, 1 };
-//state state_LED_delay = {useLED_delay, &trans_useLED_delay, 1};
-//state state_LED_off = {useLED_off, &trans_useLED_off, 1};
-//
-//trans_useLED_on.state = &state_LED_delay;
-//trans_useLED_delay.state = &state_LED_off;
-//trans_useLED_off.state = &state_LED_on;
+transition trans_useLED_on = { con_goon , NULL };
+transition trans_useLED_delay = { con_goon, NULL };
+transition trans_useLED_off = { con_goon, NULL };
+
+state state_LED_on = {useLED_on, &trans_useLED_on, 1 };
+state state_LED_delay = {useLED_delay, &trans_useLED_delay, 1};
+state state_LED_off = {useLED_off, &trans_useLED_off, 1};
+
+
 
 
 /* USER CODE END PFP */
@@ -122,7 +120,10 @@ uint8_t con_goon(void)
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-
+  trans_useLED_on.to = &state_LED_delay;
+  trans_useLED_delay.to = &state_LED_off;
+  trans_useLED_off.to = &state_LED_on;
+  prgMng_init(&state_LED_on);
   /* USER CODE END 1 */
   
 
@@ -321,7 +322,7 @@ void useLED_off(void)
   HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_SET);
 }
 // gslg IO Task:
-void StartSysControlTask(void *argument)
+void StartSysCtrlTask(void *argument)
 {
   
   for(;;)
@@ -351,6 +352,7 @@ void StartDefaultTask(void *argument)
   {
     // Is programm mode change required?
     // Execute programm
+    prgMng_execute();
     
     osDelay(1);
   }

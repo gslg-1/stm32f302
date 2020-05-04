@@ -2,7 +2,7 @@
 
 
 // Private variables
-uint8_t isInitialized = 0;
+uint8_t isInitialized;
 
 state * prg_curr;
 
@@ -12,7 +12,7 @@ state * prg_next;
 // Public Functions
 void prgMng_init( state * init)
 {
-    if (isInitialized)
+    if (!isInitialized)
     {
         prg_init = init;
         prg_curr = init;
@@ -20,6 +20,7 @@ void prgMng_init( state * init)
         isInitialized = 1;
     }
 }
+
 void prgMng_execute(void)
 {
     if (prg_init != prg_next && prg_init == prg_curr)
@@ -29,13 +30,14 @@ void prgMng_execute(void)
     }
     for(uint8_t i = 0; i < (*prg_curr).table_length ; i++)
     {
-        if ((*prg_curr).t_table[i].condition)
+        if ((*prg_curr).t_table[i].condition==1)
         {
             (*prg_curr).fxn();
-            prg_curr = (state *)(*prg_curr).t_table[i].state;
+            prg_curr = (*prg_curr).t_table[i].to;
         } 
     }
 }
+
 void prgMng_loadNextPrg(state * next)
 {
     if (prg_curr == prg_next)
