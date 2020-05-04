@@ -75,6 +75,7 @@ void HAL_MspInit(void)
   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
   /* USER CODE BEGIN MspInit 1 */
+  HAL_NVIC_SetPriority(USART1_IRQn, 14, 0 );      /* I don't know whats the subpriority */
 
   /* USER CODE END MspInit 1 */
 }
@@ -109,7 +110,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /* USER CODE BEGIN USART2_MspInit 1 */
-
+  
   /* USER CODE END USART2_MspInit 1 */
   }
 

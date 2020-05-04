@@ -24,7 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+//#include "prg_mng.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,17 +55,23 @@ const osThreadAttr_t defaultTask_attributes = {
 osThreadId_t blinkLEDTaskHandle;
 const osThreadAttr_t blinkLEDTask_attributes = {
   .name = "blinkLEDTask",
-  .priority = (osPriority_t) osPriorityNormal1,
+  .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128
 };
 /* USER CODE BEGIN PV */
-osThreadId_t comUSBTaskHandle;
-const osThreadAttr_t comUSBTask_attributes = {
-  .name = "comUSBTask",
-  .priority = (osPriority_t) osPriorityNormal1,
+// System variables:
+
+osThreadId_t sysCtrlTaskHandle;
+const osThreadAttr_t sysCtrlTask_attributes = {
+  .name = "sysCtrlTask",
+  .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 128
 };
+
+// Functional variables
+
 /* USER CODE END PV */
+
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
@@ -75,7 +81,33 @@ void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
 
 /* USER CODE BEGIN PFP */
-void StartComUSBTask(void *argument);
+// Task Function:
+void StartSysCtrlTask(void *argument);
+// Function Prototyps
+
+// Function State Machine
+void useLED_on(void);
+void useLED_delay(void);
+void useLED_off(void);
+
+uint8_t con_goon(void)
+{
+  return 1;
+}
+
+//transition trans_useLED_on = { con_goon , NULL };
+//transition trans_useLED_delay = { con_goon, NULL };
+//transition trans_useLED_off = { con_goon, NULL };
+//
+//state state_LED_on = {useLED_on, &trans_useLED_on, 1 };
+//state state_LED_delay = {useLED_delay, &trans_useLED_delay, 1};
+//state state_LED_off = {useLED_off, &trans_useLED_off, 1};
+//
+//trans_useLED_on.state = &state_LED_delay;
+//trans_useLED_delay.state = &state_LED_off;
+//trans_useLED_off.state = &state_LED_on;
+
+
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -100,6 +132,7 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
+
 
   /* USER CODE END Init */
 
@@ -144,7 +177,7 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  comUSBTaskHandle = osThreadNew(StartComUSBTask, NULL, &comUSBTask_attributes);
+  sysCtrlTaskHandle = osThreadNew(StartSysCtrlTask, NULL, &sysCtrlTask_attributes);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -230,7 +263,10 @@ static void MX_USART2_UART_Init(void)
     Error_Handler();
   }
   /* USER CODE BEGIN USART2_Init 2 */
+  
+  /* todo: Init DMA1_TX*/
 
+  /* todo: Init Callback*/
   /* USER CODE END USART2_Init 2 */
 
 }
@@ -269,17 +305,32 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void StartComUSBTask(void *argument)
+// gslg Init Functions:
+
+// gslg functions:
+void useLED_on(void)
 {
-#ifdef __UTEST
-  //uint8_t txBuf[9] = "Unit-T\n\r";
-#else
-  //uint8_t txBuf[9] = "Normal\n\r";
-#endif
+  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_RESET);
+}
+void useLED_delay(void)
+{
+  osDelay(250);
+}
+void useLED_off(void)
+{
+  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_SET);
+}
+// gslg IO Task:
+void StartSysControlTask(void *argument)
+{
+  
   for(;;)
   {
-    //HAL_UART_Transmit(&huart2,txBuf,9,500);
-    osDelay(1000);
+    // Specify Command
+    
+    // Initialise Action
+        
+    osDelay(200);
   }
 }
 
@@ -298,6 +349,9 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */  
   for(;;)
   {
+    // Is programm mode change required?
+    // Execute programm
+    
     osDelay(1);
   }
   /* USER CODE END 5 */ 
@@ -316,7 +370,6 @@ void StartTask02(void *argument)
   /* Infinite loop */
   for(;;)
   {
-    HAL_GPIO_TogglePin(LD2_GPIO_Port,LD2_Pin);
     osDelay(200);
   }
   /* USER CODE END StartTask02 */
@@ -351,7 +404,11 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-
+  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_RESET);
+  while(1)
+  {
+    
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
