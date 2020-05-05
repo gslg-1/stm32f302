@@ -4,26 +4,20 @@
 #include "stdint.h"
 
 // Publice Types
-typedef struct transition_s transition;
-typedef struct state_s state;
+typedef void (*state)(void * args);
+
+typedef struct transition_s {
+    //void (*from)(void * args); 
+    //void (*to)(void * args);
+    state from;
+    state to;
+} event;
 
 
-struct transition_s {
-    uint8_t  (* condition)(void);
-    state * to;
-};
+state prgMng_getCurState(void );
 
-struct state_s{
-    void (*fxn)(void);
-    transition * t_table;
-    uint8_t table_length;
-};
-
-
-
-void prgMng_init( state * init);
-void prgMng_execute(void);
-void prgMng_loadNextPrg(state * next);
+void prgMng_init( state init);
+void prgMng_exeEvent(event * e, void * args);
 
 
 #endif

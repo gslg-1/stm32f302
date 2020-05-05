@@ -1,48 +1,59 @@
 #include "prg_mng.h"
 
+//static state prg_base;
+//static event * prg_table[];
+//static uint8_t prg_isInitialized;
+//
+//// ---------------------------------- Prg Manager -----------------------------------------
+//void prg_init( stage s_base , event * e_table[] )
+//{
+//    prg_setBase( s_base );
+//    prg_setTabel ( e_table );
+//    prg_isInitialized =1;
+//}
+//void prg_setBase( stage s_base )
+//{
+//    prg_base = s_base;
+//}
+//void prg_setTabel ( event * e_table[] )
+//{
+//    prg_table = e_table;
+//}
+//
+// ---------------------------------- State Machine -----------------------------------------
 
 // Private variables
 uint8_t isInitialized;
 
-state * prg_curr;
+state state_curState;
 
-state * prg_init;
-state * prg_next;
+
 
 // Public Functions
-void prgMng_init( state * init)
+state prgMng_getCurState(void )
+{
+    return state_curState;
+}
+
+void prgMng_init( state init)
 {
     if (!isInitialized)
     {
-        prg_init = init;
-        prg_curr = init;
-        prg_next = init;
+        state_curState = init;
         isInitialized = 1;
     }
 }
 
-void prgMng_execute(void)
+void prgMng_exeEvent(event * e, void * args)
 {
-    if (prg_init != prg_next && prg_init == prg_curr)
+    if (isInitialized)
     {
-        prg_init = prg_next;
-        prg_curr = prg_next;
-    }
-    for(uint8_t i = 0; i < (*prg_curr).table_length ; i++)
-    {
-        if ((*prg_curr).t_table[i].condition==1)
+        if ((*e).from == state_curState )
         {
-            (*prg_curr).fxn();
-            prg_curr = (*prg_curr).t_table[i].to;
-        } 
+            (*e).to(args);
+            state_curState = (*e).to;
+        }
     }
 }
 
-void prgMng_loadNextPrg(state * next)
-{
-    if (prg_curr == prg_next)
-    {
-        prg_next = next;
-    }
-}
 // Private Functions

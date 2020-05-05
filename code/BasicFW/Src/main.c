@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdio.h>
 #include "prg_mng.h"
 /* USER CODE END Includes */
 
@@ -81,29 +82,29 @@ void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
 
 /* USER CODE BEGIN PFP */
-// Task Function:
+// gslg task fxns:
 void StartSysCtrlTask(void *argument);
-// Function Prototyps
-
-// Function State Machine
-void useLED_on(void);
-void useLED_delay(void);
-void useLED_off(void);
-
-uint8_t con_goon(void)
-{
-  return 1;
-}
-
-transition trans_useLED_on = { con_goon , NULL };
-transition trans_useLED_delay = { con_goon, NULL };
-transition trans_useLED_off = { con_goon, NULL };
-
-state state_LED_on = {useLED_on, &trans_useLED_on, 1 };
-state state_LED_delay = {useLED_delay, &trans_useLED_delay, 1};
-state state_LED_off = {useLED_off, &trans_useLED_off, 1};
+// gslg fxn prototyps:
+void prgBase(void *args){}
+void prgTMsg_entry(void *args){}
+void sendTestMessage(void *args);
 
 
+// gslg test prg mng:
+uint8_t testState;
+
+// prg base:
+state prg_base = prgBase;
+
+event ev_switch_prgTMsg;
+
+
+// prgTMsg:
+state prgTMsg = prgTMsg_entry;
+state prgTMsg_send = sendTestMessage;
+
+event ev_sendTestMessage;
+event ev_returnToPrgEntr;
 
 
 /* USER CODE END PFP */
@@ -120,10 +121,6 @@ state state_LED_off = {useLED_off, &trans_useLED_off, 1};
 int main(void)
 {
   /* USER CODE BEGIN 1 */
-  trans_useLED_on.to = &state_LED_delay;
-  trans_useLED_delay.to = &state_LED_off;
-  trans_useLED_off.to = &state_LED_on;
-  prgMng_init(&state_LED_on);
   /* USER CODE END 1 */
   
 
@@ -134,7 +131,17 @@ int main(void)
 
   /* USER CODE BEGIN Init */
 
-
+  /* prgTMsg init: */
+  ev_sendTestMessage.from = prgTMsg;
+  ev_sendTestMessage.to = prgTMsg_send;
+  ev_returnToPrgEntr.from = prgTMsg_send;
+  ev_returnToPrgEntr.to = prgTMsg;
+  /* prg init: */
+  ev_switch_prgTMsg.from = prg_base;
+  ev_switch_prgTMsg.to = prgTMsg;
+  
+  /* prg mng init: */
+  prgMng_init(prg_base);
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -309,17 +316,9 @@ static void MX_GPIO_Init(void)
 // gslg Init Functions:
 
 // gslg functions:
-void useLED_on(void)
+void sendTestMessage(void *args)
 {
-  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_RESET);
-}
-void useLED_delay(void)
-{
-  osDelay(250);
-}
-void useLED_off(void)
-{
-  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_SET);
+  HAL_UART_Transmit(&huart2,(uint8_t *)"Test Message \r\n",16,750);
 }
 // gslg IO Task:
 void StartSysCtrlTask(void *argument)
@@ -327,8 +326,9 @@ void StartSysCtrlTask(void *argument)
   
   for(;;)
   {
-    // Specify Command
-    
+    // visualize running mode
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
+    // 
     // Initialise Action
         
     osDelay(200);
@@ -351,9 +351,20 @@ void StartDefaultTask(void *argument)
   for(;;)
   {
     // Is programm mode change required?
-    // Execute programm
-    prgMng_execute();
-    
+    if (prgMng_getCurState()==prg_base)
+    {
+      prgMng_exeEvent(&ev_switch_prgTMsg,NULL);
+    }
+    if (prgMng_getCurState()==prg_base)
+    {
+      prgMng_exeEvent(&ev_sendTestMessage,NULL);
+    }
+    if (HAL_GPIO_ReadPin(B1_GPIO_Port,B1_Pin)==GPIO_PIN_RESET)
+    {
+      prgMng_exeEvent(&ev_returnToPrgEntr,NULL);
+    }
+
+
     osDelay(1);
   }
   /* USER CODE END 5 */ 
