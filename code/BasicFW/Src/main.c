@@ -87,9 +87,7 @@ prgs curDes = PRG_Flash;
 uint32_t prgMng_timer0;
 
 /* Statemachine Variables */
-prg_handle hPrg1;
-state sPrgCPrg;                                                     // Entry Program Flash Test   
-transition tPrgCPrg2CPrg;
+
 
 /* USER CODE END PV */
 
@@ -136,7 +134,7 @@ int main(void)
 
   /* USER CODE BEGIN Init */
   /* User - Programm Manager initialization ---------------------------------- */
-  hPrg1_init();
+  
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -150,6 +148,7 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
+  hPrg1_init();
 
   /* USER CODE END 2 */
   /* Init scheduler */
@@ -315,7 +314,7 @@ void StartSysCtrlTask(void *argument)
   for(;;)
   {
     prgMng_check(&hPrg1 );
-    osDelay(200);
+    osDelay(1);
   }
 }
 
@@ -346,17 +345,20 @@ void actPrgCPrg(void * args)
     case PRG_Demo:
     { 
       curDes = PRG_ComT;
-      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_ComT",sizeof((uint8_t*)"PRG_ComT"),250);
+      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_ComT\n",10,250);
+      break;
     }
     case PRG_ComT:
     {
       curDes = PRG_Flash;
-      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Flash",sizeof((uint8_t*)"PRG_Flash"),250);
+      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Flash\n",11,250);
+      break;
     }
     case PRG_Flash:
     {
       curDes = PRG_Demo;
-      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Demo",sizeof((uint8_t*)"PRG_Demo"),250);
+      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Demo\n",10,250);
+      break;
     }
     default:
     {
@@ -384,6 +386,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */  
   for(;;)
   {
+
     osDelay(1);
   }
   /* USER CODE END 5 */ 

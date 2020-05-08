@@ -2,18 +2,22 @@
 #define __PRG_RUNNER_H
 #include "prg_mng.h"
 
-
+/* External Variables */
 extern void actPrgCPrg(void * args);
 extern uint8_t cndPrgCPrg(void * args);
 
-extern prg_handle hPrg1;
-extern state sPrgCPrg;                                                     // Entry Program Flash Test   
-extern transition tPrgCPrg2CPrg;
+/* Dummy */
+void doNothing(void *args){};
+
+
+prg_handle hPrg1;
+state sPrgCPrg;                                                     // Entry Program Flash Test   
+transition tPrgCPrg2CPrg;
+
 
 transition * ttSPrgCPrg[2] = { &tPrgCPrg2CPrg, NULL};
 
-/* Dummy */
-void doNothing(void *args){};
+
 
 void hPrg1_init(void)
 {  

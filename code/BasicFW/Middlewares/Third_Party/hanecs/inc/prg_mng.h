@@ -1,7 +1,8 @@
 #ifndef __PRG_MNG_H
 #define __PRG_MNG_H
-
+/* includes */
 #include "stdint.h"
+
 /* typedefs */
 typedef enum prgMng_status_e prgMng_status;
 typedef void (*action)(void * args);
@@ -14,8 +15,8 @@ typedef struct prg_handle_s prg_handle;
 
 /* Enums */
 enum prgMng_status_e {
-    PRG_MNG_OK = (uint8_t)1,
-    PRG_MNG_FAILED = (uint8_t)0,
+    PRG_MNG_OK = 1,
+    PRG_MNG_FAILED = 0,
 } ;
 
 /* Publice Types */
@@ -32,6 +33,7 @@ struct transition_s {
 struct prg_handle_s {
     state * current;
 } ;
+
 
 /* Public Function Prototyps */
 prgMng_status prgMng_init( prg_handle * hprg , state * init);

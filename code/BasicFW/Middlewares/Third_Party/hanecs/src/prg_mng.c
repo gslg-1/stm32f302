@@ -16,6 +16,7 @@ void prgMng_switchStat(prg_handle * hprg , transition * t)
     if (t->to->getActArgs != 0)
     {
         void * args = (void *)0;
+        
         (t->to->getActArgs)(args);
         (t->to->act)(args);
         hprg->current = t->to;
@@ -31,7 +32,12 @@ prgMng_status prgMng_init( prg_handle * hprg , state * init)
 {
     if (hprg != 0 && hprg->current == 0)
     {
+        void * args = (void *)0;
+
         hprg->current = init;
+        (init->getActArgs)(args);
+        (init->act)(args);
+    
         return PRG_MNG_OK;
     }
     return PRG_MNG_FAILED;
