@@ -25,9 +25,9 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdio.h>
-#include "prg_mng.h"
+#include "prg_runner.h"
 /* USER CODE END Includes */
-
+typedef enum prgs_e prgs;
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -36,7 +36,12 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* USER CODE END PD */
-
+enum prgs_e
+{
+  PRG_Flash,           // Programm Flash Test
+  PRG_ComT,           // Programm Communication Protokol Test
+  PRG_Demo,           
+};
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 
@@ -60,7 +65,7 @@ const osThreadAttr_t blinkLEDTask_attributes = {
   .stack_size = 128
 };
 /* USER CODE BEGIN PV */
-// System variables:
+/* User - Task Variables ---------------------------------------------------- */
 
 osThreadId_t sysCtrlTaskHandle;
 const osThreadAttr_t sysCtrlTask_attributes = {
@@ -68,8 +73,23 @@ const osThreadAttr_t sysCtrlTask_attributes = {
   .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 128
 };
+osThreadId_t smplTimerTaskHandle;
+const osThreadAttr_t smplTimerTask_attributes = {
+  .name = "smplTimerTask",
+  .priority = (osPriority_t) osPriorityAboveNormal,
+  .stack_size = 32
+};
+/* User - Common Variables ----------------------------------------- */
 
-// Functional variables
+/* User - Program Manager Variables ----------------------------------------- */
+/* Execution Variables */
+prgs curDes = PRG_Flash;
+uint32_t prgMng_timer0;
+
+/* Statemachine Variables */
+prg_handle hPrg1;
+state sPrgCPrg;                                                     // Entry Program Flash Test   
+transition tPrgCPrg2CPrg;
 
 /* USER CODE END PV */
 
@@ -82,29 +102,15 @@ void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
 
 /* USER CODE BEGIN PFP */
-// gslg task fxns:
+/* User - Task Function Prototyps ------------------------------------------- */
 void StartSysCtrlTask(void *argument);
-// gslg fxn prototyps:
-void prgBase(void *args){}
-void prgTMsg_entry(void *args){}
-void sendTestMessage(void *args);
+void StartSmplTimerTask(void *args);
 
+/* User - Common Function Prototyps ----------------------------------------- */
 
-// gslg test prg mng:
-uint8_t testState;
-
-// prg base:
-state prg_base = prgBase;
-
-event ev_switch_prgTMsg;
-
-
-// prgTMsg:
-state prgTMsg = prgTMsg_entry;
-state prgTMsg_send = sendTestMessage;
-
-event ev_sendTestMessage;
-event ev_returnToPrgEntr;
+/* User - Program Manager Function Prototyps */
+void actPrgCPrg(void * args);
+uint8_t cndPrgCPrg(void * args);
 
 
 /* USER CODE END PFP */
@@ -123,25 +129,14 @@ int main(void)
   /* USER CODE BEGIN 1 */
   /* USER CODE END 1 */
   
-
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-
-  /* prgTMsg init: */
-  ev_sendTestMessage.from = prgTMsg;
-  ev_sendTestMessage.to = prgTMsg_send;
-  ev_returnToPrgEntr.from = prgTMsg_send;
-  ev_returnToPrgEntr.to = prgTMsg;
-  /* prg init: */
-  ev_switch_prgTMsg.from = prg_base;
-  ev_switch_prgTMsg.to = prgTMsg;
-  
-  /* prg mng init: */
-  prgMng_init(prg_base);
+  /* User - Programm Manager initialization ---------------------------------- */
+  hPrg1_init();
   /* USER CODE END Init */
 
   /* Configure the system clock */
@@ -186,6 +181,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   sysCtrlTaskHandle = osThreadNew(StartSysCtrlTask, NULL, &sysCtrlTask_attributes);
+  smplTimerTaskHandle = osThreadNew(StartSmplTimerTask, NULL, &smplTimerTask_attributes);
 
   /* USER CODE END RTOS_THREADS */
 
@@ -313,26 +309,64 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-// gslg Init Functions:
-
-// gslg functions:
-void sendTestMessage(void *args)
-{
-  HAL_UART_Transmit(&huart2,(uint8_t *)"Test Message \r\n",16,750);
-}
-// gslg IO Task:
+/* user - Task Function Implementations ------------------------------------*/
 void StartSysCtrlTask(void *argument)
 {
-  
   for(;;)
   {
-    // visualize running mode
-    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
-    // 
-    // Initialise Action
-        
+    prgMng_check(&hPrg1 );
     osDelay(200);
   }
+}
+
+void StartSmplTimerTask(void *argument)
+{
+  for(;;)
+  {
+    /* Add the needet Timers here */
+    if (prgMng_timer0 > 0 )
+    {
+      prgMng_timer0--;
+    }
+    HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);         
+    osDelay(125);
+  }
+}
+
+
+/* user - Common Function Implementations ------------------------------------*/
+
+
+/* user - Program Manager Function Implementations ------------------------------------*/
+void actPrgCPrg(void * args)
+{
+  prgMng_timer0 = 2;
+  switch (curDes) 
+  {
+    case PRG_Demo:
+    { 
+      curDes = PRG_ComT;
+      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_ComT",sizeof((uint8_t*)"PRG_ComT"),250);
+    }
+    case PRG_ComT:
+    {
+      curDes = PRG_Flash;
+      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Flash",sizeof((uint8_t*)"PRG_Flash"),250);
+    }
+    case PRG_Flash:
+    {
+      curDes = PRG_Demo;
+      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Demo",sizeof((uint8_t*)"PRG_Demo"),250);
+    }
+    default:
+    {
+      Error_Handler();
+    }
+  }
+}
+uint8_t cndPrgCPrg(void * args)
+{
+  return (prgMng_timer0 == 0 && HAL_GPIO_ReadPin(B1_GPIO_Port,B1_Pin)==GPIO_PIN_RESET);
 }
 
 /* USER CODE END 4 */
@@ -350,21 +384,6 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */  
   for(;;)
   {
-    // Is programm mode change required?
-    if (prgMng_getCurState()==prg_base)
-    {
-      prgMng_exeEvent(&ev_switch_prgTMsg,NULL);
-    }
-    if (prgMng_getCurState()==prg_base)
-    {
-      prgMng_exeEvent(&ev_sendTestMessage,NULL);
-    }
-    if (HAL_GPIO_ReadPin(B1_GPIO_Port,B1_Pin)==GPIO_PIN_RESET)
-    {
-      prgMng_exeEvent(&ev_returnToPrgEntr,NULL);
-    }
-
-
     osDelay(1);
   }
   /* USER CODE END 5 */ 

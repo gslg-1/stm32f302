@@ -1,59 +1,73 @@
 #include "prg_mng.h"
 
-//static state prg_base;
-//static event * prg_table[];
-//static uint8_t prg_isInitialized;
-//
-//// ---------------------------------- Prg Manager -----------------------------------------
-//void prg_init( stage s_base , event * e_table[] )
-//{
-//    prg_setBase( s_base );
-//    prg_setTabel ( e_table );
-//    prg_isInitialized =1;
-//}
-//void prg_setBase( stage s_base )
-//{
-//    prg_base = s_base;
-//}
-//void prg_setTabel ( event * e_table[] )
-//{
-//    prg_table = e_table;
-//}
-//
-// ---------------------------------- State Machine -----------------------------------------
-
-// Private variables
-uint8_t isInitialized;
-
-state state_curState;
 
 
+/* Private Function Prototyps -------------------------------------------------------------- */
+void prgMng_switchStat(prg_handle * hprg , transition * t);
 
-// Public Functions
-state prgMng_getCurState(void )
+/* Private Function Implementation --------------------------------------------------------- */
+
+/**
+ * Private function of the Program Manager;
+ * Check for the conditions befor starting.
+*/
+void prgMng_switchStat(prg_handle * hprg , transition * t)
 {
-    return state_curState;
-}
-
-void prgMng_init( state init)
-{
-    if (!isInitialized)
+    if (t->to->getActArgs != 0)
     {
-        state_curState = init;
-        isInitialized = 1;
+        void * args = (void *)0;
+        (t->to->getActArgs)(args);
+        (t->to->act)(args);
+        hprg->current = t->to;
     }
 }
 
-void prgMng_exeEvent(event * e, void * args)
+
+
+/* Public Function Implementation ---------------------------------------------------------- */
+
+
+prgMng_status prgMng_init( prg_handle * hprg , state * init)
 {
-    if (isInitialized)
+    if (hprg != 0 && hprg->current == 0)
     {
-        if ((*e).from == state_curState )
+        hprg->current = init;
+        return PRG_MNG_OK;
+    }
+    return PRG_MNG_FAILED;
+}
+
+prgMng_status prgMng_deinit( prg_handle * hprg)
+{
+    if (hprg != 0 && hprg->current != 0)
+    {
+        hprg->current = 0;
+        return PRG_MNG_OK;
+    }
+    return PRG_MNG_FAILED;
+}
+
+/**
+ * @ todo: May add some timeout variable later to provide more predictability.
+*/
+prgMng_status prgMng_check(  prg_handle * hprg )
+{
+    if (hprg != 0 && hprg->current != 0 )
+    {
+        for (uint8_t i = 0;  hprg->current->trst_table[i] != 0 ; i++)
         {
-            (*e).to(args);
-            state_curState = (*e).to;
+            if ( hprg->current->trst_table[i] != 0 )
+            {
+                void * args =(void*)0;
+                (*(hprg->current->trst_table[i])).getCndArgs(args);
+                if ((*(hprg->current->trst_table[i])).cnd(args))
+                {
+                    prgMng_switchStat(hprg ,hprg->current->trst_table[i]);
+                    return PRG_MNG_OK;
+                } 
+            }
+            
         }
     }
+    return PRG_MNG_FAILED;
 }
-
-// Private Functions
