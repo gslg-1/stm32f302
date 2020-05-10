@@ -24,10 +24,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdio.h>
 #include "prg_runner.h"
 /* USER CODE END Includes */
-typedef enum prgs_e prgs;
+
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
@@ -36,12 +35,7 @@ typedef enum prgs_e prgs;
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 /* USER CODE END PD */
-enum prgs_e
-{
-  PRG_Flash,           // Programm Flash Test
-  PRG_ComT,           // Programm Communication Protokol Test
-  PRG_Demo,           
-};
+
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
 
@@ -82,9 +76,7 @@ const osThreadAttr_t smplTimerTask_attributes = {
 /* User - Common Variables ----------------------------------------- */
 
 /* User - Program Manager Variables ----------------------------------------- */
-/* Execution Variables */
-prgs curDes = PRG_Flash;
-uint32_t prgMng_timer0;
+
 
 /* Statemachine Variables */
 
@@ -107,10 +99,12 @@ void StartSmplTimerTask(void *args);
 /* User - Common Function Prototyps ----------------------------------------- */
 
 /* User - Program Manager Function Prototyps */
-void actPrgCPrg(void * args);
-uint8_t cndPrgCPrg(void * args);
-
-
+void sendUartMsg(char * str, uint8_t length);
+void setCurPrg(uint8_t prg);
+void setTimer(uint32_t value);
+uint8_t getButtonState(void);
+uint8_t getPrgTimer0Value(void);
+uint8_t getCurPrg(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -147,8 +141,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
-  /* USER CODE BEGIN 2 */
+  /* USER CODE BEGIN 2 */  
   hPrg1_init();
+  sendUartMsg("main.c <-> 1\n",sizeof("main.c <-> 1\n"));             /* todo: Delete */
 
   /* USER CODE END 2 */
   /* Init scheduler */
@@ -313,8 +308,7 @@ void StartSysCtrlTask(void *argument)
 {
   for(;;)
   {
-    prgMng_check(&hPrg1 );
-    osDelay(1);
+    osDelay(500);
   }
 }
 
@@ -337,39 +331,24 @@ void StartSmplTimerTask(void *argument)
 
 
 /* user - Program Manager Function Implementations ------------------------------------*/
-void actPrgCPrg(void * args)
+void setTimer(uint32_t value)
 {
-  prgMng_timer0 = 2;
-  switch (curDes) 
-  {
-    case PRG_Demo:
-    { 
-      curDes = PRG_ComT;
-      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_ComT\n",10,250);
-      break;
-    }
-    case PRG_ComT:
-    {
-      curDes = PRG_Flash;
-      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Flash\n",11,250);
-      break;
-    }
-    case PRG_Flash:
-    {
-      curDes = PRG_Demo;
-      HAL_UART_Transmit(&huart2,(uint8_t*)"PRG_Demo\n",10,250);
-      break;
-    }
-    default:
-    {
-      Error_Handler();
-    }
-  }
+  prgMng_timer0 = value;
 }
-uint8_t cndPrgCPrg(void * args)
+void sendUartMsg(char * str, uint8_t length)
 {
-  return (prgMng_timer0 == 0 && HAL_GPIO_ReadPin(B1_GPIO_Port,B1_Pin)==GPIO_PIN_RESET);
+  HAL_UART_Transmit(&huart2,(uint8_t*)str,length,100);
 }
+uint8_t getButtonState(void)
+{
+  return HAL_GPIO_ReadPin(B1_GPIO_Port,B1_Pin);
+}
+uint8_t getPrgTimer0Value(void)
+{
+  return prgMng_timer0;
+}
+
+
 
 /* USER CODE END 4 */
 
@@ -386,7 +365,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */  
   for(;;)
   {
-
+    prgMng_check(&hPrg1 );
     osDelay(1);
   }
   /* USER CODE END 5 */ 

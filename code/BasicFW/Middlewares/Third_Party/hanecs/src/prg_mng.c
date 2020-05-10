@@ -13,14 +13,8 @@ void prgMng_switchStat(prg_handle * hprg , transition * t);
 */
 void prgMng_switchStat(prg_handle * hprg , transition * t)
 {
-    if (t->to->getActArgs != 0)
-    {
-        void * args = (void *)0;
-        
-        (t->to->getActArgs)(args);
-        (t->to->act)(args);
-        hprg->current = t->to;
-    }
+    (t->to->act)();
+    hprg->current = t->to;
 }
 
 
@@ -32,12 +26,10 @@ prgMng_status prgMng_init( prg_handle * hprg , state * init)
 {
     if (hprg != 0 && hprg->current == 0)
     {
-        void * args = (void *)0;
-
         hprg->current = init;
-        (init->getActArgs)(args);
-        (init->act)(args);
-    
+        sendUartMsg("prg_mng.c <-> 1\n",sizeof("prg_mng.c <-> 1\n"));
+        (init->act)();
+        sendUartMsg("prg_mng.c <-> 2\n",sizeof("prg_mng.c <-> 2\n"));
         return PRG_MNG_OK;
     }
     return PRG_MNG_FAILED;
@@ -60,15 +52,15 @@ prgMng_status prgMng_check(  prg_handle * hprg )
 {
     if (hprg != 0 && hprg->current != 0 )
     {
-        for (uint8_t i = 0;  hprg->current->trst_table[i] != 0 ; i++)
+        uint8_t len= hprg->current->size;
+        for (uint8_t i = 0; i < len ; i++)
         {
-            if ( hprg->current->trst_table[i] != 0 )
+            if ( (hprg->current->trst_table +i) != 0 )
             {
-                void * args =(void*)0;
-                (*(hprg->current->trst_table[i])).getCndArgs(args);
-                if ((*(hprg->current->trst_table[i])).cnd(args))
+                
+                if ((*(hprg->current->trst_table + i)).cnd())
                 {
-                    prgMng_switchStat(hprg ,hprg->current->trst_table[i]);
+                    prgMng_switchStat(hprg ,(hprg->current->trst_table +i));
                     return PRG_MNG_OK;
                 } 
             }

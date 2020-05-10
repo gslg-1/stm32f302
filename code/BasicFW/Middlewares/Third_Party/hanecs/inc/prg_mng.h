@@ -5,14 +5,16 @@
 
 /* typedefs */
 typedef enum prgMng_status_e prgMng_status;
-typedef void (*action)(void * args);
-typedef void (*getArgs)(void * args);
-typedef uint8_t (*condition)(void * args);
+typedef void (*action)(void);
+typedef uint8_t (*condition)(void);
 
 typedef struct state_s state;
 typedef struct transition_s transition;
 typedef struct prg_handle_s prg_handle;
 
+/* External Functions */
+/* delete after debugging */
+extern void sendUartMsg(char * str, uint8_t length);
 /* Enums */
 enum prgMng_status_e {
     PRG_MNG_OK = 1,
@@ -21,18 +23,18 @@ enum prgMng_status_e {
 
 /* Publice Types */
 struct state_s {
-    getArgs getActArgs;
     action act;
-    transition * * trst_table;
+    transition * trst_table;
+    uint8_t size;
 } ;
 struct transition_s {
-    getArgs getCndArgs;
     condition cnd;
     state * to;
 } ;
 struct prg_handle_s {
     state * current;
 } ;
+
 
 
 /* Public Function Prototyps */
