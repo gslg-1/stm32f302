@@ -22,7 +22,7 @@ void prgMng_switchStat(prg_handle * hprg , transition * t)
 /* Public Function Implementation ---------------------------------------------------------- */
 
 
-prgMng_status prgMng_init( prg_handle * hprg , state * init)
+uint8_t prgMng_init( prg_handle * hprg , state * init)
 {
     if (hprg != 0 && hprg->current == 0)
     {
@@ -35,7 +35,7 @@ prgMng_status prgMng_init( prg_handle * hprg , state * init)
     return PRG_MNG_FAILED;
 }
 
-prgMng_status prgMng_deinit( prg_handle * hprg)
+uint8_t prgMng_deinit( prg_handle * hprg)
 {
     if (hprg != 0 && hprg->current != 0)
     {
@@ -48,7 +48,7 @@ prgMng_status prgMng_deinit( prg_handle * hprg)
 /**
  * @ todo: May add some timeout variable later to provide more predictability.
 */
-prgMng_status prgMng_check(  prg_handle * hprg )
+uint8_t prgMng_check(  prg_handle * hprg )
 {
     if (hprg != 0 && hprg->current != 0 )
     {

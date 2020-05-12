@@ -57,6 +57,7 @@ _estack = 0x20004000;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
+_HNCS_Block_Size = 0x100
 
 /* Specify the memory areas */
 MEMORY
@@ -129,7 +130,16 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
-
+  .hncs :
+  {
+    _hncs_wblock_start = .;
+    . = . +_HNCS_Block_Size;
+    _hncs_wblock_end = .;
+    . = ALIGN(4);
+    _hncs_eblock_start = .;
+    . = . +_HNCS_Block_Size;
+    _hncs_eblock_end = .;
+  } >FLASH
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 

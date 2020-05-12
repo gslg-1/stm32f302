@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "prg_runner.h"
+#include "errorLogger.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -73,12 +74,19 @@ const osThreadAttr_t smplTimerTask_attributes = {
   .priority = (osPriority_t) osPriorityAboveNormal,
   .stack_size = 32
 };
-/* User - Common Variables ----------------------------------------- */
+/* User - Linker Symboles ----------------------------------------------------*/
+/* Flash - HNCS Error Block*/
+extern int32_t _hncs_wblock_start, _hncs_wblock_end;
+/* Flash - HNCS Warning Block*/
+extern int32_t _hncs_eblock_start, _hncs_eblock_end;
+
+/* Config HNCS Data Logger: */
+uint32_t * ErrorBlockStart = _&hncs_block_start;
+uint32_t * ErrorBlockEnd = _&hncs_block_end;
+
+/* User - Common Variables -------------------------------------------------- */
 
 /* User - Program Manager Variables ----------------------------------------- */
-
-
-/* Statemachine Variables */
 
 
 /* USER CODE END PV */
@@ -97,6 +105,10 @@ void StartSysCtrlTask(void *argument);
 void StartSmplTimerTask(void *args);
 
 /* User - Common Function Prototyps ----------------------------------------- */
+
+/* User - Data Logger Function Prototyps ------------------------------------ */
+uint8_t flash_write32( uint32_t * block_p, uint32_t *data);
+uint8_t flash_erase32( uint32_t * block_p );
 
 /* User - Program Manager Function Prototyps */
 void sendUartMsg(char * str, uint8_t length);
@@ -142,8 +154,10 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */  
-  hPrg1_init();
-  sendUartMsg("main.c <-> 1\n",sizeof("main.c <-> 1\n"));             /* todo: Delete */
+  hPrg1_init();                                                                                   /* Initialize Program Manager */
+  initErrorLog( (uint32_t*)_hncs_eblock_start , (uint32_t*)_hncs_eblock_end );                    /* Initialize Program Manager */
+
+  sendUartMsg("main.c <-> 1\n",sizeof("main.c <-> 1\n"));                                         /* todo: Delete */
 
   /* USER CODE END 2 */
   /* Init scheduler */
@@ -326,11 +340,19 @@ void StartSmplTimerTask(void *argument)
   }
 }
 
+/* user - Common Function Implementations --------------------------------------------- */
 
-/* user - Common Function Implementations ------------------------------------*/
+/* user - Flash Function Implementations ---------------------------------------------- */
+uint8_t flash_write32( uint32_t * block_p, uint32_t *data)
+{
+  HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , block_p , data );
+}
+uint8_t flash_erase32( uint32_t * block_p )
+{
+  FLASH_PageErase(block_p);
+}
 
-
-/* user - Program Manager Function Implementations ------------------------------------*/
+/* user - Program Manager Function Implementations ------------------------------------ */
 void setTimer(uint32_t value)
 {
   prgMng_timer0 = value;

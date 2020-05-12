@@ -70,8 +70,9 @@ Middlewares/Third_Party/FreeRTOS/Source/timers.c \
 Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
-Src/stm32f3xx_hal_timebase_tim.c\
-Middlewares/Third_Party/hanecs/src/prg_mng.c 
+Src/stm32f3xx_hal_timebase_tim.c \
+Middlewares/Third_Party/hanecs/src/prg_mng.c \
+Middlewares/Third_Party/hanecs/src/dbg_logger.c
 
 
 # ASM sources
