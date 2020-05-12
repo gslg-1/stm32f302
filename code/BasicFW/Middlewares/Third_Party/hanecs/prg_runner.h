@@ -48,8 +48,17 @@ uint8_t immediately(void){ return 1; };
 /* Actions */
 void actPrintCurrentPrg(void);
 void actNextPrg(void);
-void actDemoEnter(void);
 void actSetTimer(void);
+/* Program Demo */
+void actDemoEnter(void);
+/* Program Print Error */
+void actPErrEnter(void);
+/* Program Create Error */
+void actCErrEnter(void);
+void actCErrBase(void);
+void actCErrOr(void);
+void actCErrCreate(void);
+
 /* Conditions*/
 extern uint8_t b1Pre(void);
 extern uint8_t timerEq0(void);
@@ -305,7 +314,34 @@ void actNextPrg(void)
 /* Program Demo */
 void actDemoEnter(void)
 {
+    static uint8_t counter = 0;
     sendUartMsg("This is just a Demo Message\n",sizeof("This is just a Demo Message\n"));
+    counter++;
+    switch (counter%7)
+    {
+    case 1:
+        sendUartMsg("Hallo Vishal\n",sizeof("Hallo Vishal\n"));
+        break;
+    case 2:
+        sendUartMsg("Hallo Mani\n",sizeof("Hallo Mani\n"));
+        break;
+    case 3:
+        sendUartMsg("Hallo Patrick\n",sizeof("Hallo Patrick\n"));
+        break;
+    case 4:
+        sendUartMsg("Hallo Max\n",sizeof("Hallo Max\n"));
+        break;
+    case 5:
+        sendUartMsg("Hallo Sven\n",sizeof("Hallo Sven\n"));
+        break;
+    case 6:
+        sendUartMsg("Hallo Swati\n",sizeof("Hallo Swati\n"));
+        break;
+    
+    default:
+        sendUartMsg("Hallo Christina\n",sizeof("Hallo Christina\n"));
+        break;
+    }
 }
 /* Program Print All Errors*/
 void actPErrEnter(void)
@@ -338,6 +374,7 @@ void actCErrCreate(void)
     {
         sendUartMsg("Can't write an Error, currently in worg mode.\n",sizeof("Can't write an Error, currently in worg mode.\n"));
     }
+    counter++;
 }
 void actSetTimer(void)
 {

@@ -80,9 +80,6 @@ extern int32_t _hncs_wblock_start, _hncs_wblock_end;
 /* Flash - HNCS Warning Block*/
 extern int32_t _hncs_eblock_start, _hncs_eblock_end;
 
-/* Config HNCS Data Logger: */
-uint32_t * ErrorBlockStart = _&hncs_block_start;
-uint32_t * ErrorBlockEnd = _&hncs_block_end;
 
 /* User - Common Variables -------------------------------------------------- */
 
@@ -107,7 +104,7 @@ void StartSmplTimerTask(void *args);
 /* User - Common Function Prototyps ----------------------------------------- */
 
 /* User - Data Logger Function Prototyps ------------------------------------ */
-uint8_t flash_write32( uint32_t * block_p, uint32_t *data);
+uint8_t flash_write32( uint32_t * block_p, uint32_t data);
 uint8_t flash_erase32( uint32_t * block_p );
 
 /* User - Program Manager Function Prototyps */
@@ -343,13 +340,21 @@ void StartSmplTimerTask(void *argument)
 /* user - Common Function Implementations --------------------------------------------- */
 
 /* user - Flash Function Implementations ---------------------------------------------- */
-uint8_t flash_write32( uint32_t * block_p, uint32_t *data)
+uint8_t flash_write32( uint32_t * block_p, uint32_t data )
 {
-  HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , block_p , data );
+  if (HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , data ) != HAL_OK )
+  {
+    return PRG_MNG_FAILED;
+  }
+  return PRG_MNG_OK;
 }
 uint8_t flash_erase32( uint32_t * block_p )
 {
-  FLASH_PageErase(block_p);
+  if (HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , (uint32_t)0x0000 ) != HAL_OK )
+  {
+    return PRG_MNG_FAILED;
+  }
+  return PRG_MNG_OK;
 }
 
 /* user - Program Manager Function Implementations ------------------------------------ */

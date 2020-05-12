@@ -1,6 +1,7 @@
 #ifndef __DBG_SRC
 #define __DBG_SRC
 /* Includes ----------------------------------------------- */
+#include "stdlib.h"
 #include "stdint.h"
 #include "string.h"
 

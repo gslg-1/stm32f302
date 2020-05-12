@@ -6,7 +6,7 @@
 /* External Variables ---------------------------------------------- */
 /* External Functions ---------------------------------------------- */
 extern uint8_t flash_erase32( uint32_t * block_p );                         /* erase block with 32 bits */
-extern uint8_t flash_write32( uint32_t * block_p, uint32_t *data);          /* write block with 32 bits */
+extern uint8_t flash_write32( uint32_t * block_p, uint32_t data);          /* write block with 32 bits */
 /* Public Typedefinitions ------------------------------------------ */
 typedef struct Log_s Log;
 typedef struct LogData_s LogData;
