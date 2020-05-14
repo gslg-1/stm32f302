@@ -8,11 +8,11 @@ uint8_t eraseLog( Log * log , uint32_t * pos );
 uint8_t writeLog( Log * log , uint32_t * pos , uint32_t * dataBuffer )
 {
     uint8_t logSize = log->logSize32;
-    if ( pos > log->p_start && pos + logSize < log->p_end )
+    if ( pos >= log->p_start && pos + logSize <= log->p_end )
     {
         for ( uint8_t i = 0  ; i < logSize ; i++ )
         {
-            if (flash_write32( pos + i , *(dataBuffer + i) ) == PRG_MNG_FAILED )           /* todo - add a timeout + timer set and timer start to prevent for deadlock  */
+            if (flash_write32( pos + i , *(dataBuffer + i) ) == PRG_MNG_FAILED )      
             {
                 return PRG_MNG_FAILED;
             }
@@ -24,7 +24,7 @@ uint8_t writeLog( Log * log , uint32_t * pos , uint32_t * dataBuffer )
 uint8_t eraseLog( Log * log , uint32_t * pos )
 {
     uint8_t logSize = log->logSize32;
-    if ( pos > log->p_start && pos + logSize < log->p_end )
+    if ( pos >= log->p_start && pos + logSize <= log->p_end )
     {
         for ( uint8_t i = 0  ; i < logSize ; i++ )
         {
@@ -46,7 +46,6 @@ uint8_t logger_init( Log * log , uint16_t signature , uint8_t logSize32 , uint32
         log->logSize32 = logSize32;
         log->p_start = p_start;
         log->p_end = p_end;
-        log->p_cur = NULL;
         log->mode = LOG_MODE_WRITE_FREE;
         return PRG_MNG_OK;
     }
@@ -65,8 +64,14 @@ uint8_t logger_add( Log * log ,  uint32_t * dataBuffer )
         uint8_t logSize = log->logSize32;
         
         log->mode = LOG_MODE_WRITE_BLOCKED;
+        
+        if (p_cur == NULL)
+        {
+            return PRG_MNG_FAILED;
+        }
+
         /* find next free location */
-        while( *(uint16_t*) p_cur != log->signature && p_cur <= end )
+        while( *((uint16_t*)p_cur) == log->signature && p_cur <= end )
         {
             p_cur += logSize;
         }
@@ -80,9 +85,8 @@ uint8_t logger_add( Log * log ,  uint32_t * dataBuffer )
         {
             return PRG_MNG_FAILED;
         }
-        log->mode = LOG_MODE_WRITE_FREE;
         /* Remove space after the item*/
-        if ( p_cur + logSize >= end)
+        if ( p_cur + logSize > end)
         {
             p_cur = start;
         }
@@ -90,8 +94,12 @@ uint8_t logger_add( Log * log ,  uint32_t * dataBuffer )
         {
             p_cur += logSize;
         }
-        eraseLog( log , p_cur );
 
+        if (eraseLog( log , p_cur) == PRG_MNG_FAILED)
+        {
+            return PRG_MNG_FAILED;
+        }
+        log->mode = LOG_MODE_WRITE_FREE;
         return PRG_MNG_OK;
     }
     return PRG_MNG_FAILED;
@@ -105,7 +113,7 @@ uint8_t logger_switch ( Log * log , uint8_t mode )
     }
     return PRG_MNG_FAILED;
 }
-uint8_t logger_PgetFirst( Log * log , uint32_t * p ) 
+uint32_t * logger_PgetFirst( Log * log ) 
 {
     if ( log != NULL && log->mode == LOG_MODE_READ )
     {
@@ -124,34 +132,35 @@ uint8_t logger_PgetFirst( Log * log , uint32_t * p )
             cur++;
         }
         /* Check if there was a element after the free space*/
-        if ( *((uint16_t *)cur) == log->signature )
+        if ( *((uint16_t *)cur) == log->signature && cur <= log->p_start)
         {
-            log->p_cur = cur;
-            p = cur;
-            return PRG_MNG_OK;
+            sendUartMsg("DBG 1\n",sizeof("DBG 1\n"));
+            return cur;
         }
         else if ( *(uint16_t*)start == log->signature  )
         {
-            log->p_cur = start;
-            p = start;
-            return PRG_MNG_OK;
+            return cur;
         }
         /* else the whole mem is empty*/
     }
-    log->p_cur = NULL;
-    p = NULL;
-    return PRG_MNG_FAILED;
+    return NULL;
 }
-uint8_t logger_PgetNext( Log * log , uint32_t * p )
+uint32_t * logger_PgetNext( Log * log , uint32_t * p )
 {
-    if ( log != NULL && log->mode == LOG_MODE_READ && log->p_cur != NULL )
+    if ( log != NULL && log->mode == LOG_MODE_READ && p != NULL )
     {
-        uint32_t * p = log->p_cur + log->logSize32;
+        if( p + log->logSize32 <= log->p_end)
+        {
+            p += log->logSize32;
+        }else
+        {
+            p = log->p_start;
+        }
         if ( *((uint16_t *)p) == log->signature )
         {
-            return PRG_MNG_OK;
+            return p;
         }
     }
-    p = NULL;
-    return PRG_MNG_FAILED;
+    
+    return NULL;
 }

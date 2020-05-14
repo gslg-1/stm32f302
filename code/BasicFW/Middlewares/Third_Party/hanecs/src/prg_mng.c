@@ -27,9 +27,7 @@ uint8_t prgMng_init( prg_handle * hprg , state * init)
     if (hprg != 0 && hprg->current == 0)
     {
         hprg->current = init;
-        sendUartMsg("prg_mng.c <-> 1\n",sizeof("prg_mng.c <-> 1\n"));
         (init->act)();
-        sendUartMsg("prg_mng.c <-> 2\n",sizeof("prg_mng.c <-> 2\n"));
         return PRG_MNG_OK;
     }
     return PRG_MNG_FAILED;

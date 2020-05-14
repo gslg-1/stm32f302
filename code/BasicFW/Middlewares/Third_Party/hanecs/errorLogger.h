@@ -6,11 +6,12 @@
 typedef struct eLogData_s eLogData;
 
 struct eLogData_s {
-    uint32_t signature;
+    uint16_t signature;
     uint8_t module;
     uint8_t function;
     uint8_t number;
     uint8_t value;
+    uint16_t rest;
 } ;
 
 
@@ -25,7 +26,7 @@ extern void Error_Handler(void);
 /* Function Prototyps ------------------------------------------ */
 uint8_t initErrorLog(uint32_t * start, uint32_t * end);
 uint8_t writeError( uint8_t module , uint8_t function , uint8_t number , uint8_t value);
-uint8_t printErrorData ();
+uint8_t printErrorData ( void );
 /* Special Functions ------------------------------------------- */
 void errorStringBuilder( char * str, uint8_t strLength , uint8_t module , uint8_t function , uint8_t number , uint8_t value );
 
@@ -45,16 +46,21 @@ uint8_t initErrorLog(uint32_t * start, uint32_t * end)
 uint8_t writeError( uint8_t module , uint8_t function , uint8_t number , uint8_t value)
 {
     eLogData ed = {
-        .signature = SIGNATURE_ERROR,
+        .signature = (uint16_t)SIGNATURE_ERROR,
         .module = module,
         .function = function,
         .number = number,
-        .value = value
+        .value = value,
+        .rest = (uint16_t)0xABCD
     } ;
-    return logger_add( &ErrorLogger ,  (uint32_t*)&ed );     /* Ignor the result if it doesn't work we lose the error but thats ok*/
+    if (logger_add( &ErrorLogger ,  (uint32_t*)&ed ) == PRG_MNG_OK)
+    {
+        return PRG_MNG_OK;
+    }
+     return PRG_MNG_FAILED;
 }
 
-uint8_t printErrorData ()
+uint8_t printErrorData ( void )
 {
     if (logger_switch ( &ErrorLogger , LOG_MODE_READ ) == PRG_MNG_OK )
     {
@@ -62,15 +68,14 @@ uint8_t printErrorData ()
         uint32_t * cur = NULL;
         uint8_t msgLength = 99;
         char msg[msgLength]; 
-        logger_PgetFirst( &ErrorLogger , cur );
-        ed = (eLogData *)cur;
-        errorStringBuilder( msg , msgLength , ed->module , ed->function , ed->number , ed->value );
-        sendUartMsg(msg,msgLength);
-        while (logger_PgetNext( &ErrorLogger , cur) != PRG_MNG_FAILED )
+        cur = logger_PgetFirst( &ErrorLogger );
+
+        while (cur != NULL )
         {
             ed = (eLogData *)cur;
             errorStringBuilder( msg , msgLength , ed->module , ed->function , ed->number , ed->value );
             sendUartMsg(msg,msgLength);
+            cur = logger_PgetNext( &ErrorLogger , cur);
         }
         if (logger_switch ( &ErrorLogger , LOG_MODE_WRITE_FREE ) != PRG_MNG_OK )
         {
@@ -103,7 +108,7 @@ void errorStringBuilder( char * str, uint8_t strLength , uint8_t module , uint8_
     strcat( str , num );
     strcat( str , " | v:" );
     strcat( str , val );
-    strcat( str , " )" );
+    strcat( str , " )\n" );
 }
 
 #endif

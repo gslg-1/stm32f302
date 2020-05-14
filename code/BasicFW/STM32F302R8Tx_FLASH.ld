@@ -57,13 +57,14 @@ _estack = 0x20004000;    /* end of RAM */
 /* Generate a link error if heap and stack don't fit into RAM */
 _Min_Heap_Size = 0x200;      /* required amount of heap  */
 _Min_Stack_Size = 0x400; /* required amount of stack */
-_HNCS_Block_Size = 0x100
+_HNCS_Block_Size = 0x100; /* required amount of stack */
 
 /* Specify the memory areas */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 16K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 64K
+FLASH (rx)      : ORIGIN = 0x08000000, LENGTH = 60K
+HNCS (rw)      : ORIGIN = 0x0800F000, LENGTH = 4K
 }
 
 /* Define output sections */
@@ -130,16 +131,25 @@ SECTIONS
     KEEP (*(.fini_array*))
     PROVIDE_HIDDEN (__fini_array_end = .);
   } >FLASH
-  .hncs :
+  .hncs_test :
+  {
+    _hncs_tblock_start = .;
+    . = . +_HNCS_Block_Size;
+    _hncs_tblock_end = .;
+  } >HNCS
+  .hncs_error :
+  {
+    _hncs_eblock_start = .;
+    . = . +_HNCS_Block_Size;
+    _hncs_eblock_end = .;
+  } >HNCS
+  .hncs_warning :
   {
     _hncs_wblock_start = .;
     . = . +_HNCS_Block_Size;
     _hncs_wblock_end = .;
-    . = ALIGN(4);
-    _hncs_eblock_start = .;
-    . = . +_HNCS_Block_Size;
-    _hncs_eblock_end = .;
-  } >FLASH
+  } >HNCS
+  
   /* used by the startup to initialize data */
   _sidata = LOADADDR(.data);
 

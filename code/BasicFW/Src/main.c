@@ -76,9 +76,12 @@ const osThreadAttr_t smplTimerTask_attributes = {
 };
 /* User - Linker Symboles ----------------------------------------------------*/
 /* Flash - HNCS Error Block*/
-extern int32_t _hncs_wblock_start, _hncs_wblock_end;
+extern uint32_t _hncs_wblock_start, _hncs_wblock_end;
 /* Flash - HNCS Warning Block*/
-extern int32_t _hncs_eblock_start, _hncs_eblock_end;
+extern uint32_t _hncs_eblock_start, _hncs_eblock_end;
+/* Flash - HNCS Error Block*/
+extern uint32_t _hncs_tblock_start, _hncs_tblock_end;
+
 
 
 /* User - Common Variables -------------------------------------------------- */
@@ -102,13 +105,16 @@ void StartSysCtrlTask(void *argument);
 void StartSmplTimerTask(void *args);
 
 /* User - Common Function Prototyps ----------------------------------------- */
+void initUARTMsg( void );
 
 /* User - Data Logger Function Prototyps ------------------------------------ */
 uint8_t flash_write32( uint32_t * block_p, uint32_t data);
 uint8_t flash_erase32( uint32_t * block_p );
+uint8_t flash_eraseHNCS( void );
 
 /* User - Program Manager Function Prototyps */
 void sendUartMsg(char * str, uint8_t length);
+void sendUartMsgInt(uint32_t num, uint8_t base);
 void setCurPrg(uint8_t prg);
 void setTimer(uint32_t value);
 uint8_t getButtonState(void);
@@ -151,11 +157,12 @@ int main(void)
   MX_GPIO_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */  
-  hPrg1_init();                                                                                   /* Initialize Program Manager */
-  initErrorLog( (uint32_t*)_hncs_eblock_start , (uint32_t*)_hncs_eblock_end );                    /* Initialize Program Manager */
-
-  sendUartMsg("main.c <-> 1\n",sizeof("main.c <-> 1\n"));                                         /* todo: Delete */
-
+  if ( hPrg1_init() != PRG_MNG_OK )      
+    { sendUartMsg("Initialization of Programm P1 Failed.\n", sizeof("Initialization of Programm P1 Failed.\n")); }                        /* Initialize Program Manager *//* Initialize Program Manager */
+  if ( initErrorLog( (uint32_t*)&_hncs_eblock_start , (uint32_t*)&_hncs_eblock_end ) != PRG_MNG_OK )
+    { sendUartMsg("Initialization of Error Logger Failed.\n", sizeof("Initialization of Error Logger Failed.\n")); }                    /* Initialize Program Manager */
+  initUARTMsg();
+  
   /* USER CODE END 2 */
   /* Init scheduler */
   osKernelInitialize();
@@ -338,23 +345,138 @@ void StartSmplTimerTask(void *argument)
 }
 
 /* user - Common Function Implementations --------------------------------------------- */
+void initUARTMsg( void )
+{
+  char address[33] = {0};
+  sendUartMsg("Bachelorarbeit von gslg\n", sizeof("Bachelorarbeit von gslg\n"));
 
+  
+  sendUartMsg("HNCS Test Block: ", sizeof("HNCS Test Block: "));
+  sendUartMsg("From: ", sizeof("From: "));
+  itoa((uint32_t)&_hncs_tblock_start,address,16);
+  sendUartMsg(address, 33);
+  sendUartMsg(" To: ", sizeof(" To: "));
+  memset(address,0,33);
+  itoa((uint32_t)&_hncs_tblock_end,address,16);
+  sendUartMsg(address, 33);
+  sendUartMsg("\n", sizeof("\n"));
+  
+  
+  sendUartMsg("HNCS Error Block: ", sizeof("HNCS Error Block: "));
+  sendUartMsg("From: ", sizeof("From: "));
+  memset(address,0,33);
+  itoa((uint32_t)&_hncs_eblock_start,address,16);
+  sendUartMsg(address, 33);
+  sendUartMsg(" To: ", sizeof(" To: "));
+  memset(address,0,33);
+  itoa((uint32_t)&_hncs_eblock_end,address,16);
+  sendUartMsg(address, 33);
+  sendUartMsg("\n", sizeof("\n"));
+  
+  sendUartMsg("HNCS Warning Block: ", sizeof("HNCS Warning Block: "));
+  sendUartMsg("From: ", sizeof("From: "));
+  memset(address,0,33);
+  itoa((uint32_t)&_hncs_wblock_start,address,16);
+  sendUartMsg(address, 33);
+  sendUartMsg(" To: ", sizeof(" To: "));
+  memset(address,0,33);
+  itoa((uint32_t)&_hncs_wblock_end,address,16);
+  sendUartMsg(address, 33);
+  sendUartMsg("\n", sizeof("\n"));
+
+  sendUartMsg("Initilaization completed\n",sizeof("Initilaization: completed\n"));
+  sendUartMsg("\n", sizeof("\n"));
+}
 /* user - Flash Function Implementations ---------------------------------------------- */
 uint8_t flash_write32( uint32_t * block_p, uint32_t data )
 {
-  if (HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , data ) != HAL_OK )
+  uint8_t res = PRG_MNG_FAILED;
+
+  sendUartMsg("main.c (1)\n",sizeof("main.c (1)\n"));
+  char Address[33] = {0};                                /* todo - delete */
+  itoa((int)block_p,Address,16);                             /* todo - delete */
+  sendUartMsg("Address: ",sizeof("Address: "));          /* todo - delete */
+  sendUartMsg(Address,33);                               /* todo - delete */
+  sendUartMsg("\n",sizeof("\n"));                        /* todo - delete */
+
+  HAL_FLASH_Unlock();
+  if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , (uint64_t)data ) == HAL_OK)
   {
-    return PRG_MNG_FAILED;
+    res = PRG_MNG_OK; 
   }
-  return PRG_MNG_OK;
+  HAL_FLASH_Lock();
+  return res;
 }
 uint8_t flash_erase32( uint32_t * block_p )
 {
-  if (HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , (uint32_t)0x0000 ) != HAL_OK )
-  {
-    return PRG_MNG_FAILED;
+  uint8_t res = PRG_MNG_FAILED;
+  
+  sendUartMsg("main.c (0)\n",sizeof("main.c (1)\n"));    /* todo - delete */
+  char Address[33] = {0};                                /* todo - delete */
+  itoa((int)block_p,Address,16);                         /* todo - delete */
+  sendUartMsg("Address: ",sizeof("Address: "));          /* todo - delete */
+  sendUartMsg(Address,33);                               /* todo - delete */
+  sendUartMsg("\n",sizeof("\n"));                        /* todo - delete */
+
+  HAL_FLASH_Unlock();
+  if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , (uint32_t)0xFFFFFFFF ) == HAL_OK) 
+  {  
+    sendUartMsg("Successfull flash_erase32\n",sizeof("Successfull flash_erase32\n"));
+    res = PRG_MNG_OK; 
   }
-  return PRG_MNG_OK;
+  HAL_FLASH_Lock();
+
+  return res;
+}
+uint8_t flash_eraseHNCS( void )
+{
+  uint8_t res = PRG_MNG_FAILED;
+  static FLASH_EraseInitTypeDef f_eitf;
+  uint32_t pE;
+
+  f_eitf.TypeErase = FLASH_TYPEERASE_PAGES;
+  f_eitf.PageAddress = (uint32_t)&_hncs_tblock_start;
+  f_eitf.NbPages = (uint32_t)2;
+
+  HAL_FLASH_Unlock();
+  
+  HAL_FLASHEx_Erase( &f_eitf , &pE );
+  if (HAL_FLASHEx_Erase( &f_eitf , &pE )== HAL_OK) 
+  {  
+    sendUartMsg("Flash Erase Successfull\n",sizeof("Flash Erase Successfull\n"));
+    res = PRG_MNG_OK; 
+  }
+  HAL_FLASH_Lock();
+  return res;
+}
+uint8_t flash_writeNext( void )
+{
+  static uint32_t * address = &_hncs_tblock_start;
+  uint8_t res = PRG_MNG_FAILED;
+  
+  sendUartMsg("Test Write\n",sizeof("Test Write"));
+  eLogData testLog = {
+    .signature = (uint32_t)address,
+    .module = (uint8_t)123,
+    .function = (uint8_t)1,
+    .number = (uint8_t)2,
+    .value = (uint8_t)3
+  } ;
+
+  HAL_FLASH_Unlock();
+  if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)address , *((uint32_t*)&testLog) ) == HAL_OK ) 
+  {  
+    sendUartMsg("(1)\n",sizeof("(1)\n"));
+    if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)(address+1) , *(((uint32_t*)&testLog)+1) ) == HAL_OK ) 
+    {  
+      sendUartMsg("(2)\n",sizeof("(1)\n"));
+      res = PRG_MNG_OK;
+    }
+  }
+  sendUartMsg("(3)\n",sizeof("(1)\n"));
+  HAL_FLASH_Lock();
+  address += 2;
+  return res;
 }
 
 /* user - Program Manager Function Implementations ------------------------------------ */
@@ -365,6 +487,12 @@ void setTimer(uint32_t value)
 void sendUartMsg(char * str, uint8_t length)
 {
   HAL_UART_Transmit(&huart2,(uint8_t*)str,length,100);
+}
+void sendUartMsgInt( uint32_t num , uint8_t base )
+{
+  char numStr[20] = { 0 };
+  itoa(num,numStr,base);
+  sendUartMsg(numStr, 20);
 }
 uint8_t getButtonState(void)
 {

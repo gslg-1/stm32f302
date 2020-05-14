@@ -244,6 +244,7 @@
 
 #ifdef HAL_FLASH_MODULE_ENABLED
  #include "stm32f3xx_hal_flash.h"
+ //#include "stm32f3xx_hal_flash_ex.h"
 #endif /* HAL_FLASH_MODULE_ENABLED */
 
 #ifdef HAL_SRAM_MODULE_ENABLED

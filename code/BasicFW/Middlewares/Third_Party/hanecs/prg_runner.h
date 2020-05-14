@@ -10,10 +10,10 @@ typedef enum prgs_e prgs;
 /* Structures */
 enum prgs_e
 {
-    PRG_Flash = 0,              // Program Flash Test
-    PRG_ComT,                   // Program Communication Protokol Test
-    PRG_Demo,                   // Program Demo
+    PRG_Demo = 0,               // Program Demo
     PRG_CErr,                   // Program Create Errors
+    PRG_HEra,                   // Program Erase HNCS Flash Block
+    PRG_TNext,                  // Program Erase HNCS Flash Block
     PRG_PErr,                   // Program Print All Errors
     _PRG_END      
 };
@@ -27,7 +27,9 @@ extern uint8_t getButtonState(void);
 extern uint8_t getPrgTimer0Value(void);
 
 extern uint8_t writeError( uint8_t module , uint8_t function , uint8_t number , uint8_t value);
-extern uint8_t printErrorData ();
+extern uint8_t printErrorData ( void );
+extern uint8_t flash_eraseHNCS( void );
+extern uint8_t flash_writeNext( void );
 
 /*Intern Function Toolset*/
 /* Setter */
@@ -36,7 +38,7 @@ void setCurPrg(uint8_t prg);
 uint8_t getCurPrg(void);
 
 /* Variables */
-prgs curPrg = PRG_Flash;
+prgs curPrg = PRG_Demo;
 uint32_t prgMng_timer0;
 
 /* Dummy */
@@ -51,6 +53,10 @@ void actNextPrg(void);
 void actSetTimer(void);
 /* Program Demo */
 void actDemoEnter(void);
+/* Program Erase HNCS Flash Block */
+void actHEraEnter(void);
+/* Test Program - Write Test Package to Flash */
+void actTFNextEnter(void);
 /* Program Print Error */
 void actPErrEnter(void);
 /* Program Create Error */
@@ -65,6 +71,8 @@ extern uint8_t timerEq0(void);
 extern uint8_t timerGt0(void);
 uint8_t b1Rel(void);
 uint8_t b1Pre_TimerEq0_prgEqDemo(void);
+uint8_t b1Pre_TimerEq0_prgEqTNext(void);
+uint8_t b1Pre_TimerEq0_prgEqHEra(void);
 uint8_t b1Pre_TimerEq0_prgEqCErr(void);
 uint8_t b1Pre_TimerEq0_prgEqPErr(void);
 uint8_t b1PreAndTimerEq0(void);
@@ -81,6 +89,11 @@ state sPrgSwSh;                                                     // Switch or
 
 /* Program Demo */
 state sPrgDemo;                                                     // Entry Demo Programm
+
+/* Program Print all Errors */
+state sPrgHEra;                                                     // Entry Erase HNCS Flash Block
+/* Program Print all Errors */
+state sPrgTFNext;                                                     // Testprogram -Entry Write Next Flash Package
 
 /* Program Print all Errors */
 state sPrgPErr;                                                     // Entry Print Errors
@@ -115,15 +128,23 @@ transition ttsPrgSwSh[] =
         .to = &sPrgDemo
     },
     {
+        .cnd = b1Pre_TimerEq0_prgEqHEra,
+        .to = &sPrgHEra
+    },
+    {
+        .cnd = b1Pre_TimerEq0_prgEqTNext,
+        .to = &sPrgTFNext
+    },
+    {
         .cnd = b1Pre_TimerEq0_prgEqCErr,
         .to = &sPrgCErr
     },
     {
-        .cnd = b1Pre_TimerEq0_prgEqCErr,
+        .cnd = b1Pre_TimerEq0_prgEqPErr,
         .to = &sPrgPErr
     },
     {
-        .cnd = b1RelAndTimerGt0,
+        .cnd = b1Rel,
         .to = &sPrgSwtch
     }
 };
@@ -156,6 +177,28 @@ transition ttsPrgDemo[] =
  * Transitions form sPrgPErr 
  * Entry PErr
  */
+transition ttsPrgHEra[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgShow
+    }
+};
+/** 
+ * Transitions form sPrgPErr 
+ * Entry PErr
+ */
+transition ttsPrgTFNext[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgShow
+    }
+};
+/** 
+ * Transitions form sPrgPErr 
+ * Entry PErr
+ */
 transition ttsPrgPErr[] = 
 { 
     {
@@ -172,7 +215,7 @@ transition ttsPrgPErr[] =
 transition ttsPrgCErr[] = 
 { 
     {
-        .cnd = immediately,
+        .cnd = b1Rel,
         .to = &sPrgCErrB
     }
 };
@@ -215,7 +258,7 @@ transition ttsPrgCErrC[] =
 };
 
 
-void hPrg1_init(void)
+uint8_t hPrg1_init(void)
 {  
     sPrgShow.act = actPrintCurrentPrg;
     sPrgShow.trst_table = ttsPrgShow;
@@ -225,18 +268,26 @@ void hPrg1_init(void)
     sPrgSwtch.size = 1;
     sPrgSwSh.act = actSetTimer;
     sPrgSwSh.trst_table = ttsPrgSwSh;
-    sPrgSwSh.size = 2;
+    sPrgSwSh.size = 6;
     /* Demo */
     sPrgDemo.act = actDemoEnter;
     sPrgDemo.trst_table = ttsPrgDemo;
     sPrgDemo.size = 1;
+    /* HEra */
+    sPrgHEra.act = actHEraEnter;
+    sPrgHEra.trst_table = ttsPrgHEra;
+    sPrgHEra.size = 1;
+    /* TFNext */
+    sPrgTFNext.act = actTFNextEnter;
+    sPrgTFNext.trst_table = ttsPrgTFNext;
+    sPrgTFNext.size = 1;
     /* PErr */
     sPrgPErr.act = actPErrEnter;
     sPrgPErr.trst_table = ttsPrgPErr;
-    sPrgPErr.size = 2;
+    sPrgPErr.size = 1;
     /* CErr */
     sPrgCErr.act = actCErrEnter;
-    sPrgCErr.trst_table = ttsPrgPErr;
+    sPrgCErr.trst_table = ttsPrgCErr;
     sPrgCErr.size = 1;
     sPrgCErrB.act = actCErrBase;
     sPrgCErrB.trst_table = ttsPrgCErrB;
@@ -248,11 +299,11 @@ void hPrg1_init(void)
     sPrgCErrC.trst_table = ttsPrgCErrC;
     sPrgCErrC.size = 1;
 
-    if (prgMng_init(&hPrg1, &sPrgShow)!=PRG_MNG_OK)
+    if (prgMng_init(&hPrg1, &sPrgShow)==PRG_MNG_OK)
     {
-        sendUartMsg("prg_runner.h <-> 1\n",sizeof("prg_runner.h <-> 1\n"));
-        Error_Handler();
+        return PRG_MNG_OK;
     }
+    return PRG_MNG_FAILED;
 }
 
 
@@ -277,14 +328,24 @@ void actPrintCurrentPrg(void)
 {
     switch (getCurPrg())
     {
-        case PRG_Flash:
+        case PRG_CErr:
         {
-            sendUartMsg("PRG_Flash\n",sizeof("PRG_Flash\n"));
+            sendUartMsg("PRG_CErr\n",sizeof("PRG_CErr\n"));
             break;
         }
-        case PRG_ComT:
+        case PRG_PErr:
         {
-            sendUartMsg("PRG_ComT\n",sizeof("PRG_ComT\n"));
+            sendUartMsg("PRG_PErr\n",sizeof("PRG_PErr\n"));
+            break;
+        }
+        case PRG_HEra:
+        {
+            sendUartMsg("PRG_HEra\n",sizeof("PRG_HEra\n"));
+            break;
+        }
+        case PRG_TNext:
+        {
+            sendUartMsg("PRG_TNext\n",sizeof("PRG_TNext\n"));
             break;
         }
         case PRG_Demo:
@@ -344,6 +405,24 @@ void actDemoEnter(void)
     }
 }
 /* Program Print All Errors*/
+void actHEraEnter(void)
+{
+    sendUartMsg("Erase hole HNCS Flash Block\n",sizeof("Erase hole HNCS Flash Block\n"));
+    if ( flash_eraseHNCS() == PRG_MNG_FAILED )
+    {
+        sendUartMsg("Couldn\'t erase the HNCS Flash Block.\n",sizeof("Couldn\'t erase the HNCS Flash Block.\n"));
+    }
+}
+/* Program Print All Errors*/
+void actTFNextEnter(void)
+{
+    sendUartMsg("Test - Write Next Element\n",sizeof("Test - Write Next Element\n"));
+    if ( flash_writeNext() == PRG_MNG_FAILED )      /*todo - exchange*/
+    {
+        sendUartMsg("Couldn\'t write the next Block.\n",sizeof("Couldn\'t write the next Block.\n"));
+    }
+}
+/* Program Print All Errors*/
 void actPErrEnter(void)
 {
     sendUartMsg("Entered the Print All Errors Mode\n",sizeof("Entered the Print All Errors Mode\n"));
@@ -364,13 +443,13 @@ void actCErrBase(void)
 }
 void actCErrOr(void)
 {
-    setTimer(40);
+    setTimer(20);
 }
 void actCErrCreate(void)
 {
-    static uint32_t counter = 0;
+    static uint8_t counter = 0;
     sendUartMsg("Creating Error ...\n",sizeof("Creating Error ...\n"));
-    if (writeError(counter,counter + counter%7,counter + counter%9,~counter) != PRG_MNG_OK)
+    if (writeError(counter,counter+1,counter+2,counter+3) != PRG_MNG_OK)
     {
         sendUartMsg("Can't write an Error, currently in worg mode.\n",sizeof("Can't write an Error, currently in worg mode.\n"));
     }
@@ -433,6 +512,22 @@ uint8_t b1RelAndTimerEq0(void)
 uint8_t b1Pre_TimerEq0_prgEqDemo(void)
 {
     if (b1PreAndTimerEq0() && getCurPrg() == PRG_Demo)
+    {
+        return 1;
+    }
+    return 0;
+}
+uint8_t b1Pre_TimerEq0_prgEqHEra(void)
+{
+    if (b1PreAndTimerEq0() && getCurPrg() == PRG_HEra)
+    {
+        return 1;
+    }
+    return 0;
+}
+uint8_t b1Pre_TimerEq0_prgEqTNext(void)
+{
+    if (b1PreAndTimerEq0() && getCurPrg() == PRG_TNext)
     {
         return 1;
     }

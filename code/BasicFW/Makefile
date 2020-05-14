@@ -140,7 +140,7 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32F3xx/Include \
 -IDrivers/CMSIS/Include \
 -IMiddlewares/Third_Party/hanecs/inc \
--IMiddlewares/Third_Party/hanecs \
+-IMiddlewares/Third_Party/hanecs 
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

@@ -22,7 +22,6 @@ struct Log_s
     uint8_t mode;
     uint16_t signature;
     uint8_t logSize32;
-    uint32_t * p_cur;
     uint32_t * p_start;
     uint32_t * p_end;
 } ;
@@ -33,7 +32,7 @@ uint8_t logger_init( Log * log , uint16_t signature , uint8_t logSize32 , uint32
 /* static length --------------------------------------------------- */
 uint8_t logger_add( Log * log ,  uint32_t * DataBuffer );
 uint8_t logger_switch ( Log * log , uint8_t mode );
-uint8_t logger_PgetFirst( Log * log , uint32_t * p );
-uint8_t logger_PgetNext( Log * log , uint32_t * p );
+uint32_t * logger_PgetFirst( Log * log );
+uint32_t * logger_PgetNext( Log * log , uint32_t * p );
 
 #endif

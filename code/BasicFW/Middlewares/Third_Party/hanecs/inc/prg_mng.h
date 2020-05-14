@@ -12,8 +12,6 @@ typedef struct transition_s transition;
 typedef struct prg_handle_s prg_handle;
 
 /* External Functions */
-/* delete after debugging */
-extern void sendUartMsg(char * str, uint8_t length);
 /* Enums */
 
 /* Publice Types */

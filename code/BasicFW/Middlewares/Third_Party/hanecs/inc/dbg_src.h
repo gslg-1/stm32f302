@@ -12,6 +12,10 @@ enum prgMng_status_e {
     PRG_MNG_OK = 1,
     PRG_MNG_FAILED = 0,
 } ;
+
+/* external Function Prototyps ---------------------------- */
+extern void sendUartMsg(char * str, uint8_t length);                    /* delete after debugging */
+extern void sendUartMsgInt(uint32_t  num, uint8_t base);                    /* delete after debugging */
 /* Function Prototyps ------------------------------------- */
 
 /* Function Implementations ------------------------------- */
