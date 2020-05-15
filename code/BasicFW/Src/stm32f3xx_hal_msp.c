@@ -75,7 +75,7 @@ void HAL_MspInit(void)
   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
   /* USER CODE BEGIN MspInit 1 */
-  HAL_NVIC_SetPriority(USART1_IRQn, 14, 0 );      /* I don't know whats the subpriority */
+  HAL_NVIC_SetPriority(USART2_IRQn, 14, 0 );      /* I don't know whats the subpriority */
 
   /* USER CODE END MspInit 1 */
 }

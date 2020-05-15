@@ -153,7 +153,7 @@ CFLAGS += -g -gdwarf-2
 endif
 
 ifeq ($(UTEST), 1)
-CFLAGS += -D  __UTEST
+CFLAGS += -D__UTEST
 endif
 
 

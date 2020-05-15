@@ -35,6 +35,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define RX_BUFF_SIZE = 32
+#define RX_RINGBUFF_SIZE = 16
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -44,6 +46,12 @@
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+
+uint8_t uartCmdAvailable_F;
+uint8_t uartCMD;
+uint8_t rxBufferArr[RX_RINGBUFF_SIZE][RX_BUFF_SIZE];
+uint8_t * p_rRx;
+uint8_t * p_wRx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -107,6 +115,11 @@ void StartSmplTimerTask(void *args);
 /* User - Common Function Prototyps ----------------------------------------- */
 void initUARTMsg( void );
 
+/* User - Callback Function Prototyps --------------------------------------- */
+void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart);   
+/* User - UART Communication Function Prototyps ----------------------------- */
+void extractUARTCmd( uint8_t * p_rRx , uint8_t * p_wRx , uint8_t bSize);
+uint8_t charCmdToInt(*p_rRx,RX_BUFF_SIZE);
 /* User - Data Logger Function Prototyps ------------------------------------ */
 uint8_t flash_write32( uint32_t * block_p, uint32_t data);
 uint8_t flash_erase32( uint32_t * block_p );
@@ -134,6 +147,8 @@ uint8_t getCurPrg(void);
 int main(void)
 {
   /* USER CODE BEGIN 1 */
+#ifndef __UTEST
+
   /* USER CODE END 1 */
   
   /* MCU Configuration--------------------------------------------------------*/
@@ -161,6 +176,7 @@ int main(void)
     { sendUartMsg("Initialization of Programm P1 Failed.\n", sizeof("Initialization of Programm P1 Failed.\n")); }                        /* Initialize Program Manager *//* Initialize Program Manager */
   if ( initErrorLog( (uint32_t*)&_hncs_eblock_start , (uint32_t*)&_hncs_eblock_end ) != PRG_MNG_OK )
     { sendUartMsg("Initialization of Error Logger Failed.\n", sizeof("Initialization of Error Logger Failed.\n")); }                    /* Initialize Program Manager */
+ 
   initUARTMsg();
   
   /* USER CODE END 2 */
@@ -210,6 +226,11 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
   }
+
+#else
+  /* Do some crazy Unit Testing*/
+
+#endif
   /* USER CODE END 3 */
 }
 
@@ -261,8 +282,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 0 */
 
-  /* USER CODE BEGIN USART2_Init 1 */
-
+  /* USER CODE BEGIN USART2_Init 1 */ 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 38400;
@@ -274,6 +294,7 @@ static void MX_USART2_UART_Init(void)
   huart2.Init.OverSampling = UART_OVERSAMPLING_16;
   huart2.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
   huart2.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
     Error_Handler();
@@ -322,10 +343,24 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 /* user - Task Function Implementations ------------------------------------*/
+
+/* Get started every x ms or, after some especial initilaization via Interrupt. */
 void StartSysCtrlTask(void *argument)
 {
+  /* Start UART RX the first time in IRQ mode  */
+  p_rRx = rxBufferArr;
+  p_wRx = rxBufferArr;
+
+  HAL_UART_Receive_DMA( &huart2 , rxBuf , 20 );
+
   for(;;)
   {
+    /*Extract UART Command*/
+    if (p_rRx != p_wRx)
+    {
+      uartCMD = extractUARTCmd( p_rRx , p_wRx , RX_BUFF_SIZE );
+    }
+
     osDelay(500);
   }
 }
@@ -344,6 +379,61 @@ void StartSmplTimerTask(void *argument)
   }
 }
 
+/* User - Callback Functions --------------------------------------------------------- */
+void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == USART2)
+  {
+    strcpy( (char *)p_wRx , huart->pRxBuffPtr );
+    if (p_wRx+1 != p_rRx)
+    {
+      if ( p_wRx < RX_BUFF_SIZE )
+      {
+        p_wRx++;
+      }else
+      {
+        p_wRx = rxBufferArr;
+      }
+    }
+    else
+    {
+      /* Rx Ring Buffer overflow */
+      writeError(MOD_MAIN_C,FNC_HAL_UART_RxCpltCallback,RSN_BUFFER_OVERFLOW,0);
+    }
+  }
+}
+/* user - UART Communication Function Implementations --------------------------------- */
+uint8_t charCmdToInt(*p_rRx,RX_BUFF_SIZE)
+{
+  switch (expression)
+  {
+  case /* constant-expression */:
+    /* code */
+    break;
+  
+  default:
+    break;
+  }
+}
+uint8_t extractUARTCmd( uint8_t * p_rRx , uint8_t * p_wRx , uint8_t bSize)
+{
+  uint8_t res = 
+  /* If Buffer not Empty */
+  if (p_rRx != p_wRx)
+  {
+    uartCmdAvailable_F = 1;
+    if (p_rRx < RX_BUFF_SIZE)
+    {
+      p_rRx++;
+    }
+    else
+    {
+      p_rRx = rxBufferArr;
+    }
+  }
+  /* Else, equal to Buffer is empty. */
+  
+}
 /* user - Common Function Implementations --------------------------------------------- */
 void initUARTMsg( void )
 {

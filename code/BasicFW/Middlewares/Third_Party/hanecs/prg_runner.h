@@ -15,7 +15,7 @@ enum prgs_e
     PRG_HEra,                   // Program Erase HNCS Flash Block
     PRG_TNext,                  // Program Erase HNCS Flash Block
     PRG_PErr,                   // Program Print All Errors
-    _PRG_END      
+    _PRG_END,
 };
 
 /*Extern Function Toolset */
@@ -69,6 +69,7 @@ void actCErrCreate(void);
 extern uint8_t b1Pre(void);
 extern uint8_t timerEq0(void);
 extern uint8_t timerGt0(void);
+extenr uint8_t isUartCmdAvailable(void);
 uint8_t b1Rel(void);
 uint8_t b1Pre_TimerEq0_prgEqDemo(void);
 uint8_t b1Pre_TimerEq0_prgEqTNext(void);
@@ -511,7 +512,7 @@ uint8_t b1RelAndTimerEq0(void)
 }
 uint8_t b1Pre_TimerEq0_prgEqDemo(void)
 {
-    if (b1PreAndTimerEq0() && getCurPrg() == PRG_Demo)
+    if ( ( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_Demo )
     {
         return 1;
     }
@@ -519,7 +520,7 @@ uint8_t b1Pre_TimerEq0_prgEqDemo(void)
 }
 uint8_t b1Pre_TimerEq0_prgEqHEra(void)
 {
-    if (b1PreAndTimerEq0() && getCurPrg() == PRG_HEra)
+    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_HEra)
     {
         return 1;
     }
@@ -527,7 +528,7 @@ uint8_t b1Pre_TimerEq0_prgEqHEra(void)
 }
 uint8_t b1Pre_TimerEq0_prgEqTNext(void)
 {
-    if (b1PreAndTimerEq0() && getCurPrg() == PRG_TNext)
+    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_TNext)
     {
         return 1;
     }
@@ -535,7 +536,7 @@ uint8_t b1Pre_TimerEq0_prgEqTNext(void)
 }
 uint8_t b1Pre_TimerEq0_prgEqCErr(void)
 {
-    if (b1PreAndTimerEq0() && getCurPrg() == PRG_CErr)
+    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_CErr)
     {
         return 1;
     }
@@ -543,7 +544,7 @@ uint8_t b1Pre_TimerEq0_prgEqCErr(void)
 }
 uint8_t b1Pre_TimerEq0_prgEqPErr(void)
 {
-    if (b1PreAndTimerEq0() && getCurPrg() == PRG_PErr)
+    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_PErr)
     {
         return 1;
     }
