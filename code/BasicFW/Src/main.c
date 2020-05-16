@@ -30,13 +30,20 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
+typedef enum uartCmdRespond_e uartCmdRespond;
+typedef enum uartCmdRespond_e uartCmdRespond;
+
+enum uartRxState {
+  UART_PACKAGE_AV,
+  UART_CMD_AV,
+  UART_FREE
+} ;
 
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define RX_BUFF_SIZE = 32
-#define RX_RINGBUFF_SIZE = 16
+#define RX_BUFF_SIZE  4
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -45,13 +52,16 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+DMA_HandleTypeDef hdma2;
 UART_HandleTypeDef huart2;
 
-uint8_t uartCmdAvailable_F;
+
 uint8_t uartCMD;
-uint8_t rxBufferArr[RX_RINGBUFF_SIZE][RX_BUFF_SIZE];
-uint8_t * p_rRx;
-uint8_t * p_wRx;
+uint8_t rxBuffer[RX_BUFF_SIZE];
+uint8_t rxGarbage[RX_BUFF_SIZE];
+uint8_t * rxPointer = rxBuffer;
+
+uint8_t rxCounter;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -103,6 +113,7 @@ extern uint32_t _hncs_tblock_start, _hncs_tblock_end;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA1_Channel6_Init(void);
 static void MX_USART2_UART_Init(void);
 void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
@@ -118,8 +129,11 @@ void initUARTMsg( void );
 /* User - Callback Function Prototyps --------------------------------------- */
 void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart);   
 /* User - UART Communication Function Prototyps ----------------------------- */
-void extractUARTCmd( uint8_t * p_rRx , uint8_t * p_wRx , uint8_t bSize);
-uint8_t charCmdToInt(*p_rRx,RX_BUFF_SIZE);
+uint8_t extractUARTCmd( uint8_t * data );
+uint8_t uartCmdIsAvailable(void);
+uint8_t getUartCmd(void);
+void resetUartCom(void);
+
 /* User - Data Logger Function Prototyps ------------------------------------ */
 uint8_t flash_write32( uint32_t * block_p, uint32_t data);
 uint8_t flash_erase32( uint32_t * block_p );
@@ -170,6 +184,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA1_Channel6_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */  
   if ( hPrg1_init() != PRG_MNG_OK )      
@@ -283,6 +298,7 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE END USART2_Init 0 */
 
   /* USER CODE BEGIN USART2_Init 1 */ 
+  huart2.hdmarx = &hdma2;
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
   huart2.Init.BaudRate = 38400;
@@ -342,25 +358,76 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-/* user - Task Function Implementations ------------------------------------*/
+/* User - MX Functions ---------------------------------------------------- */
+void MX_DMA1_Channel6_Init(void)
+{
+  hdma2.Instance = DMA1_Channel6;
+  hdma2.Init.Direction = DMA_PERIPH_TO_MEMORY;
+  //hdma2.Init.PeriphInc = default for the first example
+  //hdma2.Init.MemInc = default for the first example
+  hdma2.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
+  hdma2.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
+  hdma2.Init.Mode = DMA_NORMAL;
+  //hdma2.Init.Priority = 
+
+
+  if ( HAL_DMA_Init( &hdma2 ) != HAL_OK )
+  {
+    sendUartMsg("DMA Init Failed\n",sizeof("DMA Init Failed\n"));
+    writeError( MOD_MAIN_C , FNC_MX_DMA_UART2_RX_Init , RSN_INIT_FAILURE , 0 );
+  }
+}
+
+
+/* User - Task Function Implementations ----------------------------------- */
 
 /* Get started every x ms or, after some especial initilaization via Interrupt. */
 void StartSysCtrlTask(void *argument)
 {
   /* Start UART RX the first time in IRQ mode  */
-  p_rRx = rxBufferArr;
-  p_wRx = rxBufferArr;
-
-  HAL_UART_Receive_DMA( &huart2 , rxBuf , 20 );
-
+  HAL_UART_Receive_DMA( &huart2 , rxBuffer , 20 );
+  sendUartMsg("DBG->TaskStarte\n",sizeof("DBG->TaskStarte\n"));
+  char respons[15];
   for(;;)
   {
-    /*Extract UART Command*/
-    if (p_rRx != p_wRx)
+    
+    /* Check if new Command is Free */
+    if (rxPointer == rxGarbage && rxCounter > 0)
     {
-      uartCMD = extractUARTCmd( p_rRx , p_wRx , RX_BUFF_SIZE );
+      uint8_t cmd = _PRG_END;
+      state * currentState = NULL;
+      /* Extract UART Command */
+      cmd = extractUARTCmd( rxBuffer );
+      memset( rxBuffer , 0 , RX_BUFF_SIZE );
+      rxPointer = rxBuffer;
+      
+      memset( respons , 0 , 15 );
+      currentState = prgMng_getState( &hPrg1 );
+      if (currentState != NULL )
+      {
+        if ( currentState != &sPrgSwSh )
+        {
+          strcpy( respons,"BUSY\n");
+        }
+        else if ( cmd >= _PRG_END)
+        {
+          strcpy( respons , "UNKNOWN\n" );
+        }
+        else
+        {
+          uartCMD = cmd;
+          strcpy( respons , "ACKNOWLEDGE\n" );
+        }
+      }
+      sendUartMsg( respons , 7);
+      rxCounter--;
     }
-
+    /* Send Respond for all other received packages */
+    while (rxCounter > 0)
+    {
+      sendUartMsg( "BUSSY" , 7);
+      rxCounter--;
+    }
     osDelay(500);
   }
 }
@@ -384,55 +451,45 @@ void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
 {
   if (huart->Instance == USART2)
   {
-    strcpy( (char *)p_wRx , huart->pRxBuffPtr );
-    if (p_wRx+1 != p_rRx)
+    rxCounter++;
+    if ( huart->pRxBuffPtr == rxBuffer )
     {
-      if ( p_wRx < RX_BUFF_SIZE )
-      {
-        p_wRx++;
-      }else
-      {
-        p_wRx = rxBufferArr;
-      }
+      rxPointer = rxGarbage;
     }
-    else
-    {
-      /* Rx Ring Buffer overflow */
-      writeError(MOD_MAIN_C,FNC_HAL_UART_RxCpltCallback,RSN_BUFFER_OVERFLOW,0);
-    }
+  }
+  else
+  {
+    /* Rx Ring Buffer overflow */
+    writeError( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_BUFFER_OVERFLOW , 0 );
+  }
+   if (HAL_UART_Receive_DMA( huart , rxPointer , RX_BUFF_SIZE ) != HAL_OK )
+  {
+    writeError( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_OPEN_RECEIVE_FRAME_FAILED , 0 );
   }
 }
 /* user - UART Communication Function Implementations --------------------------------- */
-uint8_t charCmdToInt(*p_rRx,RX_BUFF_SIZE)
+uint8_t extractUARTCmd( uint8_t * data )
 {
-  switch (expression)
-  {
-  case /* constant-expression */:
-    /* code */
-    break;
-  
-  default:
-    break;
-  }
+  uint8_t res = (uint8_t)_PRG_END;
+  res = (uint8_t)atoi((char*)data);
+  return res;
 }
-uint8_t extractUARTCmd( uint8_t * p_rRx , uint8_t * p_wRx , uint8_t bSize)
+uint8_t uartCmdIsAvailable(void)
 {
-  uint8_t res = 
-  /* If Buffer not Empty */
-  if (p_rRx != p_wRx)
+  if ( uartCMD != (uint8_t)_PRG_END )
   {
-    uartCmdAvailable_F = 1;
-    if (p_rRx < RX_BUFF_SIZE)
-    {
-      p_rRx++;
-    }
-    else
-    {
-      p_rRx = rxBufferArr;
-    }
+    return PRG_MNG_OK;
   }
-  /* Else, equal to Buffer is empty. */
-  
+  return PRG_MNG_FAILED;
+}
+uint8_t getUartCmd(void)
+{
+  return uartCMD;
+}
+void resetUartCom(void)
+{
+  uartCMD = (uint8_t)_PRG_END;
+  rxPointer = rxBuffer;
 }
 /* user - Common Function Implementations --------------------------------------------- */
 void initUARTMsg( void )

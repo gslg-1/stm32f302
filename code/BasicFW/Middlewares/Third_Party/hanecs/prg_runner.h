@@ -1,5 +1,10 @@
 #ifndef __PRG_RUNNER_H
 #define __PRG_RUNNER_H
+/**
+ * @ Todo:
+*/
+
+
 
 #include "prg_mng.h"
 
@@ -31,6 +36,8 @@ extern uint8_t printErrorData ( void );
 extern uint8_t flash_eraseHNCS( void );
 extern uint8_t flash_writeNext( void );
 
+extern void resetUartCom(void);
+
 /*Intern Function Toolset*/
 /* Setter */
 void setCurPrg(uint8_t prg);
@@ -48,9 +55,15 @@ uint8_t immediately(void){ return 1; };
 /* External Variables */
 
 /* Actions */
+/* Program Selection - Button */
 void actPrintCurrentPrg(void);
 void actNextPrg(void);
 void actSetTimer(void);
+/* Program Selection - UART */
+void actSetCurUartPrg(void);
+/* Program Start */
+void actPrgStartMsg(void);
+
 /* Program Demo */
 void actDemoEnter(void);
 /* Program Erase HNCS Flash Block */
@@ -69,13 +82,17 @@ void actCErrCreate(void);
 extern uint8_t b1Pre(void);
 extern uint8_t timerEq0(void);
 extern uint8_t timerGt0(void);
-extenr uint8_t isUartCmdAvailable(void);
+
+extern uint8_t uartCmdIsAvailable(void);
+extern uint8_t getUartCmd(void);
+
+
 uint8_t b1Rel(void);
-uint8_t b1Pre_TimerEq0_prgEqDemo(void);
-uint8_t b1Pre_TimerEq0_prgEqTNext(void);
-uint8_t b1Pre_TimerEq0_prgEqHEra(void);
-uint8_t b1Pre_TimerEq0_prgEqCErr(void);
-uint8_t b1Pre_TimerEq0_prgEqPErr(void);
+uint8_t prgEqDemo(void);
+uint8_t prgEqTNext(void);
+uint8_t prgEqHEra(void);
+uint8_t prgEqCErr(void);
+uint8_t prgEqPErr(void);
 uint8_t b1PreAndTimerEq0(void);
 uint8_t b1RelAndTimerGt0(void);
 uint8_t b1RelAndTimerEq0(void);
@@ -83,10 +100,15 @@ uint8_t b1RelAndTimerEq0(void);
 
 
 prg_handle hPrg1;
-/* Program Selection*/
+/* Program Selection - Button */
 state sPrgShow;                                                     // Show Current Program
 state sPrgSwtch;                                                    // Switch Programm
 state sPrgSwSh;                                                     // Switch or Show
+/* Program Selection - UART */
+state sUartCmd;  
+
+/* Program Start */
+state sPrgStart;
 
 /* Program Demo */
 state sPrgDemo;                                                     // Entry Demo Programm
@@ -106,6 +128,7 @@ state sPrgCErrO;                                                    // Leaf or c
 state sPrgCErrC;                                                    // Create Error
 
 
+/* ------------------ Program Selection - Button ------------------ */
 /** 
  * Transitions form sPrgShow 
  * Show Current Program
@@ -113,40 +136,12 @@ state sPrgCErrC;                                                    // Create Er
 transition ttsPrgShow[] = 
 { 
     {
-        .cnd =b1Pre,
-        .to  =&sPrgSwSh
-    }
-};
-
-/** 
- * Transitions form sPrgSwSh 
- * Switch or Show
-*/
-transition ttsPrgSwSh[] = 
-{ 
-    {
-        .cnd = b1Pre_TimerEq0_prgEqDemo,
-        .to = &sPrgDemo
+        .cnd = uartCmdIsAvailable,
+        .to  = &sUartCmd
     },
     {
-        .cnd = b1Pre_TimerEq0_prgEqHEra,
-        .to = &sPrgHEra
-    },
-    {
-        .cnd = b1Pre_TimerEq0_prgEqTNext,
-        .to = &sPrgTFNext
-    },
-    {
-        .cnd = b1Pre_TimerEq0_prgEqCErr,
-        .to = &sPrgCErr
-    },
-    {
-        .cnd = b1Pre_TimerEq0_prgEqPErr,
-        .to = &sPrgPErr
-    },
-    {
-        .cnd = b1Rel,
-        .to = &sPrgSwtch
+        .cnd = b1Pre,
+        .to  = &sPrgSwSh
     }
 };
 
@@ -162,6 +157,72 @@ transition ttsPrgSwtch[] =
     }
 };
 
+/** 
+ * Transitions form sPrgSwSh 
+ * 
+*/
+transition ttsPrgSwSh[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgSwtch
+    },
+    {
+        .cnd = timerEq0,
+        .to = &sPrgStart
+    }
+} ;
+
+/* ------------------ Program Selection - UART ------------------ */
+/** 
+ * Transitions form ttsUartCmd 
+ * 
+*/
+transition ttsUartCmd[] = 
+{ 
+    {
+        .cnd = immediately,
+        .to = &sPrgStart
+    }
+} ;
+
+
+/* ------------------ Program Start ------------------ */
+
+/** 
+ * Transitions form sPrgStart 
+ * Switch or Show
+*/
+transition ttsPrgStart[] = 
+{ 
+    {
+        .cnd = prgEqDemo,
+        .to = &sPrgDemo
+    },
+    {
+        .cnd = prgEqHEra,
+        .to = &sPrgHEra
+    },
+    {
+        .cnd = prgEqTNext,
+        .to = &sPrgTFNext
+    },
+    {
+        .cnd = prgEqCErr,
+        .to = &sPrgCErr
+    },
+    {
+        .cnd = prgEqPErr,
+        .to = &sPrgPErr
+    },
+    {
+        .cnd = immediately,
+        .to = &sPrgSwtch
+    }
+};
+
+
+/* ------------------ Program Modes ------------------ */
 /** 
  * Transitions form sPrgDemo 
  * Entry Demo Programm
@@ -261,15 +322,31 @@ transition ttsPrgCErrC[] =
 
 uint8_t hPrg1_init(void)
 {  
+    /* Program Selection - Button */
     sPrgShow.act = actPrintCurrentPrg;
     sPrgShow.trst_table = ttsPrgShow;
-    sPrgShow.size = 1;
+    sPrgShow.size = 2;
+
     sPrgSwtch.act = actNextPrg;
     sPrgSwtch.trst_table = ttsPrgSwtch;
     sPrgSwtch.size = 1;
+    
     sPrgSwSh.act = actSetTimer;
     sPrgSwSh.trst_table = ttsPrgSwSh;
-    sPrgSwSh.size = 6;
+    sPrgSwSh.size = 2;
+    
+    /* Program Selection - UART */
+    sUartCmd.act = actSetCurUartPrg;
+    sUartCmd.trst_table = ttsUartCmd;
+    sUartCmd.size = 1;
+    
+    
+    /* Program Start */
+    sPrgStart.act = actPrgStartMsg;
+    sPrgStart.trst_table = ttsPrgStart;
+    sPrgStart.size = 6;
+
+    /* Program Modes */
     /* Demo */
     sPrgDemo.act = actDemoEnter;
     sPrgDemo.trst_table = ttsPrgDemo;
@@ -325,6 +402,7 @@ uint8_t getCurPrg(void)
 
 
 /* Actions */
+/* Program Selection - Button */
 void actPrintCurrentPrg(void)
 {
     switch (getCurPrg())
@@ -373,6 +451,26 @@ void actNextPrg(void)
         setCurPrg(0);
     }
 }
+void actSetTimer(void)
+{
+    setTimer(20);
+}
+
+/* Program Selection - UART */
+void actSetCurUartPrg(void)
+{
+    uint8_t cmd = _PRG_END;
+    cmd = getUartCmd();
+    setCurPrg(cmd);
+    resetUartCom();
+}
+
+/* Program Start */
+void actPrgStartMsg(void)
+{
+    sendUartMsg("Start Program Mode\n" , sizeof("Start Program Mode\n") );
+}
+
 /* Program Demo */
 void actDemoEnter(void)
 {
@@ -456,10 +554,7 @@ void actCErrCreate(void)
     }
     counter++;
 }
-void actSetTimer(void)
-{
-    setTimer(20);
-}
+
 
 /* Conditions*/
 uint8_t b1Pre(void)
@@ -510,41 +605,41 @@ uint8_t b1RelAndTimerEq0(void)
     }
     return 0;
 }
-uint8_t b1Pre_TimerEq0_prgEqDemo(void)
+uint8_t prgEqDemo(void)
 {
-    if ( ( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_Demo )
+    if (  getCurPrg() == PRG_Demo )
     {
         return 1;
     }
     return 0;
 }
-uint8_t b1Pre_TimerEq0_prgEqHEra(void)
+uint8_t prgEqHEra(void)
 {
-    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_HEra)
+    if ( getCurPrg() == PRG_HEra)
     {
         return 1;
     }
     return 0;
 }
-uint8_t b1Pre_TimerEq0_prgEqTNext(void)
+uint8_t prgEqTNext(void)
 {
-    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_TNext)
+    if ( getCurPrg() == PRG_TNext)
     {
         return 1;
     }
     return 0;
 }
-uint8_t b1Pre_TimerEq0_prgEqCErr(void)
+uint8_t prgEqCErr(void)
 {
-    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_CErr)
+    if ( getCurPrg() == PRG_CErr)
     {
         return 1;
     }
     return 0;
 }
-uint8_t b1Pre_TimerEq0_prgEqPErr(void)
+uint8_t prgEqPErr(void)
 {
-    if (( isUartCmdAvailable() || b1PreAndTimerEq0() ) && getCurPrg() == PRG_PErr)
+    if ( getCurPrg() == PRG_PErr)
     {
         return 1;
     }

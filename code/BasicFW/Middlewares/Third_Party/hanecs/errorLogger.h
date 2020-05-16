@@ -9,15 +9,18 @@ typedef struct eLogData_s eLogData;
 enum modules_e{
     MOD_MAIN_C,
     MODULES_ENUM_END
-}
+} ;
 enum functions_e{
     FNC_HAL_UART_RxCpltCallback,
+    FNC_MX_DMA_UART2_RX_Init,
     FUNCTIONS_ENUM_END
-}
+} ;
 enum reason_e{
-    RSN_BUFFER_OVERFLOW
+    RSN_BUFFER_OVERFLOW,
+    RSN_OPEN_RECEIVE_FRAME_FAILED,
+    RSN_INIT_FAILURE,
     REASON_ENUM_END
-}
+} ;
 
 struct eLogData_s {
     uint16_t signature;

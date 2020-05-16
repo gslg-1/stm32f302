@@ -43,6 +43,15 @@ uint8_t prgMng_deinit( prg_handle * hprg)
     return PRG_MNG_FAILED;
 }
 
+state * prgMng_getState( prg_handle * hprg )
+{
+    if (hprg != 0 && hprg->current != 0)
+    {
+        return hprg->current;
+    }
+    return NULL;
+}
+
 /**
  * @ todo: May add some timeout variable later to provide more predictability.
 */
