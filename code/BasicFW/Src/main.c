@@ -53,7 +53,7 @@ enum uartRxState {
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
-
+DMA_HandleTypeDef hdma_usart2_rx;
 
 uint8_t uartCMD;
 uint8_t rxBuffer[RX_BUFF_SIZE];
