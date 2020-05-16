@@ -53,7 +53,7 @@ enum uartRxState {
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_rx;
+
 
 uint8_t uartCMD;
 uint8_t rxBuffer[RX_BUFF_SIZE];
@@ -182,7 +182,6 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA1_Channel6_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */  
   if ( hPrg1_init() != PRG_MNG_OK )      
