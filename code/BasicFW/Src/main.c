@@ -52,7 +52,6 @@ enum uartRxState {
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-DMA_HandleTypeDef hdma2;
 UART_HandleTypeDef huart2;
 
 
@@ -113,7 +112,6 @@ extern uint32_t _hncs_tblock_start, _hncs_tblock_end;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA1_Channel6_Init(void);
 static void MX_USART2_UART_Init(void);
 void StartDefaultTask(void *argument);
 void StartTask02(void *argument);
@@ -359,24 +357,7 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 /* User - MX Functions ---------------------------------------------------- */
-void MX_DMA1_Channel6_Init(void)
-{
-  hdma2.Instance = DMA1_Channel6;
-  hdma2.Init.Direction = DMA_PERIPH_TO_MEMORY;
-  //hdma2.Init.PeriphInc = default for the first example
-  //hdma2.Init.MemInc = default for the first example
-  hdma2.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
-  hdma2.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
-  hdma2.Init.Mode = DMA_NORMAL;
-  //hdma2.Init.Priority = 
 
-
-  if ( HAL_DMA_Init( &hdma2 ) != HAL_OK )
-  {
-    sendUartMsg("DMA Init Failed\n",sizeof("DMA Init Failed\n"));
-    writeError( MOD_MAIN_C , FNC_MX_DMA_UART2_RX_Init , RSN_INIT_FAILURE , 0 );
-  }
-}
 
 
 /* User - Task Function Implementations ----------------------------------- */

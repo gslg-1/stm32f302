@@ -75,8 +75,6 @@ void HAL_MspInit(void)
   HAL_NVIC_SetPriority(PendSV_IRQn, 15, 0);
 
   /* USER CODE BEGIN MspInit 1 */
-  HAL_NVIC_SetPriority(USART2_IRQn, 14, 0 );      /* I don't know whats the subpriority */
-  HAL_NVIC_SetPriority(DMA1_Channel6_IRQn, 13, 0 );      /* I don't know whats the subpriority */
 
   /* USER CODE END MspInit 1 */
 }
@@ -146,28 +144,7 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
 }
 
 /* USER CODE BEGIN 1 */
-void HAL_DMA_MspInit(DMA_HandleTypeDef * hdma)
-{
-  if(hdma->Instance==DMA1_Channel6)
-  {
 
-    /* Peripheral clock enable */
-    __HAL_RCC_DMA1_CLK_ENABLE();
-
-  }
-
-}
-void HAL_DMA_MspDeinit(DMA_HandleTypeDef * hdma)
-{
-  if(hdma->Instance==DMA1_Channel6)
-  {
-
-    /* Peripheral clock enable */
-    __HAL_RCC_DMA1_CLK_DISABLE();
-
-  }
-
-}
 /* USER CODE END 1 */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
