@@ -53,9 +53,9 @@ enum uartRxState {
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_rx;
 
-
-uint8_t uartCMD;
+uint8_t uartCMD = _PRG_END;
 uint8_t rxBuffer[RX_BUFF_SIZE];
 uint8_t rxGarbage[RX_BUFF_SIZE];
 uint8_t * rxPointer = rxBuffer;
@@ -69,13 +69,7 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
   .stack_size = 128
 };
-/* Definitions for blinkLEDTask */
-osThreadId_t blinkLEDTaskHandle;
-const osThreadAttr_t blinkLEDTask_attributes = {
-  .name = "blinkLEDTask",
-  .priority = (osPriority_t) osPriorityNormal,
-  .stack_size = 128
-};
+
 /* USER CODE BEGIN PV */
 /* User - Task Variables ---------------------------------------------------- */
 
@@ -88,7 +82,7 @@ const osThreadAttr_t sysCtrlTask_attributes = {
 osThreadId_t smplTimerTaskHandle;
 const osThreadAttr_t smplTimerTask_attributes = {
   .name = "smplTimerTask",
-  .priority = (osPriority_t) osPriorityAboveNormal,
+  .priority = (osPriority_t) osPriorityHigh,
   .stack_size = 32
 };
 /* User - Linker Symboles ----------------------------------------------------*/
@@ -114,7 +108,6 @@ void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
 void StartDefaultTask(void *argument);
-void StartTask02(void *argument);
 
 /* USER CODE BEGIN PFP */
 /* User - Task Function Prototyps ------------------------------------------- */
@@ -215,14 +208,14 @@ int main(void)
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
-  /* creation of blinkLEDTask */
-  blinkLEDTaskHandle = osThreadNew(StartTask02, NULL, &blinkLEDTask_attributes);
-
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   sysCtrlTaskHandle = osThreadNew(StartSysCtrlTask, NULL, &sysCtrlTask_attributes);
   smplTimerTaskHandle = osThreadNew(StartSmplTimerTask, NULL, &smplTimerTask_attributes);
-
+  if ( sysCtrlTaskHandle == NULL || smplTimerTaskHandle == NULL )
+  {
+    DBG_Error_Handler( MOD_MAIN_C , FNC_main , RSN_INIT_FAILURE , 0 );
+  }
   /* USER CODE END RTOS_THREADS */
 
   /* Start scheduler */
@@ -265,7 +258,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    Error_Handler();
+    DBG_Error_Handler(MOD_MAIN_C , FNC_SystemClock_Config , 0 , 0);
   }
   /** Initializes the CPU, AHB and APB busses clocks 
   */
@@ -278,7 +271,7 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
-    Error_Handler();
+    DBG_Error_Handler(MOD_MAIN_C , FNC_SystemClock_Config , 1 , 0);
   }
 }
 
@@ -309,7 +302,7 @@ static void MX_USART2_UART_Init(void)
   
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
-    Error_Handler();
+    DBG_Error_Handler( MOD_MAIN_C , FNC_MX_DMA_UART2_RX_Init , 0 , 0 );
   }
   /* USER CODE BEGIN USART2_Init 2 */
   
@@ -361,12 +354,11 @@ static void MX_GPIO_Init(void)
 void StartSysCtrlTask(void *argument)
 {
   /* Start UART RX the first time in IRQ mode  */
-  HAL_UART_Receive_DMA( &huart2 , rxBuffer , 20 );
-  sendUartMsg("DBG->TaskStarte\n",sizeof("DBG->TaskStarte\n"));
+  sendUartMsg( "Init SysCtrlTask\n" , sizeof( "Init SysCtrlTask\n" ) );
+  HAL_UART_Receive_DMA( &huart2 , rxBuffer , RX_BUFF_SIZE );
   char respons[15];
   for(;;)
   {
-    
     /* Check if new Command is Free */
     if (rxPointer == rxGarbage && rxCounter > 0)
     {
@@ -410,6 +402,7 @@ void StartSysCtrlTask(void *argument)
 
 void StartSmplTimerTask(void *argument)
 {
+  sendUartMsg( "Init SmplTimerTask\n" , sizeof( "Init SmplTimerTask\n" ) );
   for(;;)
   {
     /* Add the needet Timers here */
@@ -425,6 +418,7 @@ void StartSmplTimerTask(void *argument)
 /* User - Callback Functions --------------------------------------------------------- */
 void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
 {
+  writeError(111,111,0,0);
   if (huart->Instance == USART2)
   {
     rxCounter++;
@@ -436,11 +430,11 @@ void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
   else
   {
     /* Rx Ring Buffer overflow */
-    writeError( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_BUFFER_OVERFLOW , 0 );
+    DBG_Error_Handler( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_BUFFER_OVERFLOW , 0 );
   }
    if (HAL_UART_Receive_DMA( huart , rxPointer , RX_BUFF_SIZE ) != HAL_OK )
   {
-    writeError( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_OPEN_RECEIVE_FRAME_FAILED , 0 );
+    DBG_Error_Handler( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_OPEN_RECEIVE_FRAME_FAILED , 1 );
   }
 }
 /* user - UART Communication Function Implementations --------------------------------- */
@@ -626,8 +620,6 @@ uint8_t getPrgTimer0Value(void)
   return prgMng_timer0;
 }
 
-
-
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -640,31 +632,14 @@ uint8_t getPrgTimer0Value(void)
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
+  sendUartMsg( "Init DefaultTask\n" , sizeof( "Init DefaultTask\n" ) );
   /* Infinite loop */  
   for(;;)
   {
-    prgMng_check(&hPrg1 );
+    prgMng_check( &hPrg1 );
     osDelay(1);
   }
   /* USER CODE END 5 */ 
-}
-
-/* USER CODE BEGIN Header_StartTask02 */
-/**
-* @brief Function implementing the blinkLEDTask thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartTask02 */
-void StartTask02(void *argument)
-{
-  /* USER CODE BEGIN StartTask02 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(200);
-  }
-  /* USER CODE END StartTask02 */
 }
 
 /**
@@ -692,7 +667,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   * @brief  This function is executed in case of error occurrence.
   * @retval None
   */
-void Error_Handler(void)
+void Error_Handler( void )
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */

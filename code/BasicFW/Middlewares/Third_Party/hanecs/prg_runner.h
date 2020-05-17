@@ -24,7 +24,7 @@ enum prgs_e
 };
 
 /*Extern Function Toolset */
-extern void Error_Handler(void);
+extern void DBG_Error_Handler( uint8_t mod , uint8_t fnx , uint8_t num , uint8_t val );
 extern void sendUartMsg(char * str, uint8_t length);
 extern void setTimer(uint32_t value);
 
@@ -435,7 +435,7 @@ void actPrintCurrentPrg(void)
         default:
         {
             sendUartMsg("Error: actPrintCurrentPrg\n",sizeof("Error: actPrintCurrentPrg\n"));
-            Error_Handler();
+            DBG_Error_Handler( PRG_RUNNER_H , FNC_actPrintCurrentPrg , RSN_UNEXPECTED_VALUE , 0 );
         }
     }
 }

@@ -6,21 +6,7 @@
 typedef struct eLogData_s eLogData;
 
 
-enum modules_e{
-    MOD_MAIN_C,
-    MODULES_ENUM_END
-} ;
-enum functions_e{
-    FNC_HAL_UART_RxCpltCallback,
-    FNC_MX_DMA_UART2_RX_Init,
-    FUNCTIONS_ENUM_END
-} ;
-enum reason_e{
-    RSN_BUFFER_OVERFLOW,
-    RSN_OPEN_RECEIVE_FRAME_FAILED,
-    RSN_INIT_FAILURE,
-    REASON_ENUM_END
-} ;
+
 
 struct eLogData_s {
     uint16_t signature;
@@ -46,6 +32,7 @@ uint8_t writeError( uint8_t module , uint8_t function , uint8_t number , uint8_t
 uint8_t printErrorData ( void );
 /* Special Functions ------------------------------------------- */
 void errorStringBuilder( char * str, uint8_t strLength , uint8_t module , uint8_t function , uint8_t number , uint8_t value );
+void DBG_Error_Handler( uint8_t mod , uint8_t fnx , uint8_t num , uint8_t val );
 
 /* Function Implementation ------------------------------------- */
 uint8_t initErrorLog(uint32_t * start, uint32_t * end)
@@ -126,6 +113,12 @@ void errorStringBuilder( char * str, uint8_t strLength , uint8_t module , uint8_
     strcat( str , " | v:" );
     strcat( str , val );
     strcat( str , " )\n" );
+}
+void DBG_Error_Handler( uint8_t mod , uint8_t fnx , uint8_t num , uint8_t val )
+{
+  writeError( mod , fnx , num , val);
+  sendUartMsg( "New Error Handler\n" , sizeof("New Error Handler\n") );
+  Error_Handler();
 }
 
 #endif

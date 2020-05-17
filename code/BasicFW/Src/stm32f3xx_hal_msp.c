@@ -95,7 +95,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
   /* USER CODE END USART2_MspInit 0 */
     /* Peripheral clock enable */
     __HAL_RCC_USART2_CLK_ENABLE();
-  
+    __HAL_RCC_DMA1_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     /**USART2 GPIO Configuration    
     PA2     ------> USART2_TX
