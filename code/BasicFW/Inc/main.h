@@ -37,7 +37,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-
+DMA_HandleTypeDef hdma_usart2_rx;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -74,6 +74,7 @@ void Error_Handler( void );
 #define SWO_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
 
+void sendUartMsg(char * str, uint8_t length);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus

@@ -14,9 +14,16 @@ enum prgMng_status_e {
 } ;
 
 /* Error Location Identifier Enums */
+
+/**
+ * @Note: This is a easy way to encode the everything but a lot work.
+ * A better solution would be __FILE__ and __LINE__ but then we need to store a String.
+*/
 enum modules_e{
+    MOD_stm32f3xx_it,
     MOD_MAIN_C,
-    PRG_RUNNER_H,
+    MOD_PRG_RUNNER_H,
+    
     MODULES_ENUM_END
 } ;
 enum functions_mod_main_c{
@@ -33,7 +40,16 @@ enum functions_mod_prg_runner_h{
     
     FUNCTIONS_PRGRUNNERH_ENUM_END
 } ;
+enum functions_mod_stm32f3xx_it{
+    FNC_HardFault_Handler,
+    FNC_MemManage_Handler,
+    FNC_BusFault_Handler,
+    FNC_UsageFault_Handler,
+    
+    FUNCTIONS_stm32f3xx_it_END
+} ;
 enum reason{
+    RSN_NO_SPECIFIC,
     RSN_BUFFER_OVERFLOW,
     RSN_OPEN_RECEIVE_FRAME_FAILED,
     RSN_INIT_FAILURE,

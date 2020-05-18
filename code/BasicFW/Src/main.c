@@ -43,7 +43,7 @@ enum uartRxState {
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-#define RX_BUFF_SIZE  4
+#define RX_BUFF_SIZE  2
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -53,7 +53,7 @@ enum uartRxState {
 
 /* Private variables ---------------------------------------------------------*/
 UART_HandleTypeDef huart2;
-DMA_HandleTypeDef hdma_usart2_rx;
+//DMA_HandleTypeDef hdma_usart2_rx;
 
 uint8_t uartCMD = _PRG_END;
 uint8_t rxBuffer[RX_BUFF_SIZE];
@@ -107,9 +107,11 @@ extern uint32_t _hncs_tblock_start, _hncs_tblock_end;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_DMA1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
+/* User - MX Function Prototyps ------------------------------------------- */
 /* User - Task Function Prototyps ------------------------------------------- */
 void StartSysCtrlTask(void *argument);
 void StartSmplTimerTask(void *args);
@@ -131,7 +133,6 @@ uint8_t flash_erase32( uint32_t * block_p );
 uint8_t flash_eraseHNCS( void );
 
 /* User - Program Manager Function Prototyps */
-void sendUartMsg(char * str, uint8_t length);
 void sendUartMsgInt(uint32_t num, uint8_t base);
 void setCurPrg(uint8_t prg);
 void setTimer(uint32_t value);
@@ -175,6 +176,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */  
   if ( hPrg1_init() != PRG_MNG_OK )      
@@ -304,6 +306,8 @@ static void MX_USART2_UART_Init(void)
   {
     DBG_Error_Handler( MOD_MAIN_C , FNC_MX_DMA_UART2_RX_Init , 0 , 0 );
   }
+
+  
   /* USER CODE BEGIN USART2_Init 2 */
   
   /* todo: Init DMA1_TX*/
@@ -346,9 +350,6 @@ static void MX_GPIO_Init(void)
 
 }
 
-/* USER CODE BEGIN 4 */
-/* User - MX Functions ---------------------------------------------------- */
-/* User - Task Function Implementations ----------------------------------- */
 
 /* Get started every x ms or, after some especial initilaization via Interrupt. */
 void StartSysCtrlTask(void *argument)
@@ -366,14 +367,13 @@ void StartSysCtrlTask(void *argument)
       state * currentState = NULL;
       /* Extract UART Command */
       cmd = extractUARTCmd( rxBuffer );
+
       memset( rxBuffer , 0 , RX_BUFF_SIZE );
-      rxPointer = rxBuffer;
-      
       memset( respons , 0 , 15 );
       currentState = prgMng_getState( &hPrg1 );
       if (currentState != NULL )
       {
-        if ( currentState != &sPrgSwSh )
+        if ( currentState != &sPrgShow )
         {
           strcpy( respons,"BUSY\n");
         }
@@ -387,16 +387,20 @@ void StartSysCtrlTask(void *argument)
           strcpy( respons , "ACKNOWLEDGE\n" );
         }
       }
+      else
+      {
+        sendUartMsg("DBG_TASK4\n",sizeof("DBG_TASK1\n"));
+      }
       sendUartMsg( respons , 7);
       rxCounter--;
     }
     /* Send Respond for all other received packages */
     while (rxCounter > 0)
     {
-      sendUartMsg( "BUSSY" , 7);
+      sendUartMsg( "BUSY\n" , 7);
       rxCounter--;
     }
-    osDelay(500);
+    osDelay(250);
   }
 }
 
@@ -415,10 +419,23 @@ void StartSmplTimerTask(void *argument)
   }
 }
 
+static void MX_DMA1_Init(void)
+{
+  __HAL_RCC_DMA1_CLK_ENABLE();
+  
+  HAL_NVIC_SetPriority( DMA1_Channel6_IRQn , 14 , 0 );
+  HAL_NVIC_EnableIRQ( DMA1_Channel6_IRQn );
+}
+
 /* User - Callback Functions --------------------------------------------------------- */
+void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
+{
+
+}
 void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
 {
-  writeError(111,111,0,0);
+  //sendUartMsg("callback\n",sizeof("callback\n"));
+  HAL_GPIO_WritePin( LD2_GPIO_Port , LD2_Pin , GPIO_PIN_RESET);
   if (huart->Instance == USART2)
   {
     rxCounter++;
@@ -432,10 +449,7 @@ void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
     /* Rx Ring Buffer overflow */
     DBG_Error_Handler( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_BUFFER_OVERFLOW , 0 );
   }
-   if (HAL_UART_Receive_DMA( huart , rxPointer , RX_BUFF_SIZE ) != HAL_OK )
-  {
-    DBG_Error_Handler( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_OPEN_RECEIVE_FRAME_FAILED , 1 );
-  }
+  
 }
 /* user - UART Communication Function Implementations --------------------------------- */
 uint8_t extractUARTCmd( uint8_t * data )
@@ -671,7 +685,7 @@ void Error_Handler( void )
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
-  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(LD2_GPIO_Port,LD2_Pin,GPIO_PIN_SET);
   while(1)
   {
     

@@ -76,6 +76,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f3xx_hal.h"
+#include "main.h"
 
 /** @addtogroup STM32F3xx_HAL_Driver
   * @{
@@ -570,7 +571,6 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
 {
 	uint32_t flag_it = hdma->DmaBaseAddress->ISR;
   uint32_t source_it = hdma->Instance->CCR;
-          
   /* Half Transfer Complete Interrupt management ******************************/
   if ((RESET != (flag_it & (DMA_FLAG_HT1 << hdma->ChannelIndex))) && (RESET != (source_it & DMA_IT_HT)))
   {
@@ -615,6 +615,7 @@ void HAL_DMA_IRQHandler(DMA_HandleTypeDef *hdma)
   	
   	if(hdma->XferCpltCallback != NULL)
   	{
+      
   		/* Transfer complete callback */
   		hdma->XferCpltCallback(hdma);
   	}

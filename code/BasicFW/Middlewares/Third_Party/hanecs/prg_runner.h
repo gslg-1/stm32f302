@@ -325,7 +325,7 @@ uint8_t hPrg1_init(void)
     /* Program Selection - Button */
     sPrgShow.act = actPrintCurrentPrg;
     sPrgShow.trst_table = ttsPrgShow;
-    sPrgShow.size = 2;
+    sPrgShow.size = 1;
 
     sPrgSwtch.act = actNextPrg;
     sPrgSwtch.trst_table = ttsPrgSwtch;
@@ -435,7 +435,7 @@ void actPrintCurrentPrg(void)
         default:
         {
             sendUartMsg("Error: actPrintCurrentPrg\n",sizeof("Error: actPrintCurrentPrg\n"));
-            DBG_Error_Handler( PRG_RUNNER_H , FNC_actPrintCurrentPrg , RSN_UNEXPECTED_VALUE , 0 );
+            DBG_Error_Handler( MOD_PRG_RUNNER_H , FNC_actPrintCurrentPrg , RSN_UNEXPECTED_VALUE , 0 );
         }
     }
 }
