@@ -65,15 +65,16 @@ Reset_Handler:
 /* Copy the data segment initializers from flash to SRAM */
   movs	r1, #0
   b	LoopCopyDataInit
-RamClear:
-	ldr	r0, =0x20000000
-	ldr	r3, =0x20003FFF
-	movs	r0, #0
-	adds	r0, r0, #4
-	cmp	r2, r3
-	bcc RamClear
-	b Reset_Handler
-
+/**
+ *RamClear:
+ *	ldr	r0, =0x20000000
+ *	ldr	r3, =0x20003FFF
+ *	movs	r0, #0
+ *	adds	r0, r0, #4
+ *	cmp	r2, r3
+ *	bcc RamClear
+ *	b Reset_Handler
+*/
 CopyDataInit:
 
 	ldr	r3, =_sidata
