@@ -4,8 +4,6 @@
  * @ Todo:
 */
 
-
-
 #include "prg_mng.h"
 
 /* Definitions */
@@ -98,16 +96,16 @@ uint8_t b1RelAndTimerGt0(void);
 uint8_t b1RelAndTimerEq0(void);
 
 
-state * check_sPrgShow(void);
-state * check_sPrgSwtch(void);
-state * check_sPrgSwSh(void);
-state * check_sUartCmd(void);
-state * check_sPrgStart(void);
-state * check_bsPrgShow(void);
-state * check_sPrgCErr(void);
-state * check_sPrgCErrB(void);
-state * check_sPrgCErrO(void);
-state * check_sPrgCErrC(void);
+const state * check_sPrgShow(void);
+const state * check_sPrgSwtch(void);
+const state * check_sPrgSwSh(void);
+const state * check_sUartCmd(void);
+const state * check_sPrgStart(void);
+const state * check_bsPrgShow(void);
+const state * check_sPrgCErr(void);
+const state * check_sPrgCErrB(void);
+const state * check_sPrgCErrO(void);
+const state * check_sPrgCErrC(void);
 
 
 prg_handle hPrg1;
@@ -118,9 +116,9 @@ prg_handle hPrg1;
 */
 const state sPrgShow =
 {
-    .act = actPrintCurrentPrg;
-    .tran_t = check_sPrgShow;
-};
+    .act = &actPrintCurrentPrg,
+    .tran_t = &check_sPrgShow,
+} ;
 
 /** 
  * Transitions form sPrgSwtch
@@ -129,9 +127,9 @@ const state sPrgShow =
 
 const state sPrgSwtch =
 {
-    .act = actNextPrg;
-    .tran_t = check_sPrgSwtch;
-}
+    .act = &actNextPrg,
+    .tran_t = &check_sPrgSwtch,
+} ;
 
 /** 
  * Transitions form sPrgSwSh 
@@ -140,9 +138,9 @@ const state sPrgSwtch =
 
 const state sPrgSwSh =
 {
-    .act = actSetTimer;
-    .tran_t = check_sPrgSwSh;
-}
+    .act = &actSetTimer,
+    .tran_t = &check_sPrgSwSh,
+} ;
 
 /* ------------------ Program Selection - UART ------------------ */
 /** 
@@ -152,9 +150,9 @@ const state sPrgSwSh =
 
 const state sUartCmd =
 {
-    .act = actPrgStartMsg;
-    .tran_t = check_sUartCmd;
-}
+    .act = &actPrgStartMsg,
+    .tran_t = &check_sUartCmd,
+} ;
 
 /* ------------------ Program Start ------------------ */
 
@@ -165,9 +163,9 @@ const state sUartCmd =
 
 const state sPrgStart =
 {
-    .act = actPrgStartMsg;
-    .tran_t = check_sPrgStart;
-}
+    .act = &actPrgStartMsg,
+    .tran_t = &check_sPrgStart,
+} ;
 
 
 /* ------------------ Program Modes ------------------ */
@@ -177,9 +175,9 @@ const state sPrgStart =
  */
 const state sPrgDemo =
 {
-    .act = actDemoEnter;
-    .tran_t = check_bsPrgShow;
-}
+    .act = &actDemoEnter,
+    .tran_t = &check_bsPrgShow,
+} ;
 
 /** 
  * Transitions form sPrgPErr 
@@ -187,9 +185,9 @@ const state sPrgDemo =
  */
 const state sPrgHEra =
 {
-    .act = actHEraEnter;
-    .tran_t = check_bsPrgShow;
-}
+    .act = &actHEraEnter,
+    .tran_t = &check_bsPrgShow,
+} ;
 /** 
  * Transitions form sPrgPErr 
  * Entry PErr
@@ -197,9 +195,9 @@ const state sPrgHEra =
 
 const state sPrgTFNext =
 {
-    .act = actTFNextEnter;
-    .tran_t = check_bsPrgShow;
-}
+    .act = &actTFNextEnter,
+    .tran_t = &check_bsPrgShow,
+} ;
 /** 
  * Transitions form sPrgPErr 
  * Entry PErr
@@ -207,9 +205,9 @@ const state sPrgTFNext =
 
 const state sPrgPErr =
 {
-    .act = actPErrEnter;
-    .tran_t = check_bsPrgShow;
-}
+    .act = &actPErrEnter,
+    .tran_t = &check_bsPrgShow,
+} ;
 
 /** 
  * Transitions form sPrgCErr 
@@ -218,9 +216,9 @@ const state sPrgPErr =
 
 const state sPrgCErr =
 {
-    .act = actCErrEnter;
-    .tran_t = check_sPrgCErr;
-}
+    .act = &actCErrEnter,
+    .tran_t = &check_sPrgCErr,
+} ;
 
 /** 
  * Transitions form sPrgCErr 
@@ -229,9 +227,9 @@ const state sPrgCErr =
 
 const state sPrgCErrB =
 {
-    .act = actCErrBase;
-    .tran_t = check_sPrgCErrB;
-}
+    .act = &actCErrBase,
+    .tran_t = &check_sPrgCErrB,
+} ;
 /** 
  * Transitions form sPrgCErr 
  * state sPrgCErr Leaf or create Error
@@ -239,9 +237,9 @@ const state sPrgCErrB =
 
 const state sPrgCErrO =
 {
-    .act = actCErrOr;
-    .tran_t = check_sPrgCErrO;
-}
+    .act = &actCErrOr,
+    .tran_t = &check_sPrgCErrO,
+} ;
 /** 
  * Transitions form sPrgCErr 
  * state sPrgCErr Create Error
@@ -249,9 +247,9 @@ const state sPrgCErrO =
 
 const state sPrgCErrC =
 {
-    .act = actCErrCreate;
-    .tran_t = check_sPrgCErrC;
-}
+    .act = &actCErrCreate,
+    .tran_t = &check_sPrgCErrC,
+} ;
 
 uint8_t hPrg1_init(void)
 {  
@@ -433,118 +431,118 @@ void actCErrCreate(void)
     counter++;
 }
 
-state * check_sPrgShow(void)
+const state * check_sPrgShow(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( uartCmdIsAvailable() )
     {
-        res = &sUartCmd
+        res = &sUartCmd;
     }else if( b1Pre() )
     {
-        res = &sPrgSwSh
+        res = &sPrgSwSh;
     }
     return res;
 }
-state * check_sPrgSwtch(void)
+const state * check_sPrgSwtch(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     res = &sPrgShow;
     return res;
 }
-state * check_sPrgSwSh(void)
+const state * check_sPrgSwSh(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( b1Rel() )
     {
-        res = &sPrgSwtch
+        res = &sPrgSwtch;
     }else if( timerEq0() )
     {
-        res = &sPrgStart
+        res = &sPrgStart;
     }
     return res;
 }
-state * check_sUartCmd(void)
+const state * check_sUartCmd(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     
-    res = &sPrgStart
+    res = &sPrgStart;
 
     return res;
 }
-}
-state * check_sPrgStart(void)
+
+const state * check_sPrgStart(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( prgEqDemo() )
     {
-        res = &sPrgDemo
+        res = &sPrgDemo;
     }
     else if( prgEqHEra() )
     {
-        res = &sPrgHEra
+        res = &sPrgHEra;
     }
     else if( prgEqTNext() )
     {
-        res = &sPrgTFNext
+        res = &sPrgTFNext;
     }
     else if( prgEqCErr() )
     {
-        res = &sPrgCErr
+        res = &sPrgCErr;
     }
     else if( prgEqPErr() )
     {
-        res = &sPrgPErr
+        res = &sPrgPErr;
     }
     else 
     {
-        res = &sPrgSwtch
+        res = &sPrgSwtch;
     }
     return res;
 }
-state * check_bsPrgShow(void)
+const state * check_bsPrgShow(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( b1Rel() )
     {
-        res = &sPrgShow
+        res = &sPrgShow;
     }
     return res;
 }
-state * check_sPrgCErr(void)
+const state * check_sPrgCErr(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( b1Rel() )
     {
-        res = &sPrgCErrB
+        res = &sPrgCErrB;
     }
     return res;
 }
-state * check_sPrgCErrB(void)
+const state * check_sPrgCErrB(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( b1Pre() )
     {
-        res = &sPrgCErrO
+        res = &sPrgCErrO;
     }
     return res;
 }
-state * check_sPrgCErrO(void)
+const state * check_sPrgCErrO(void)
 {
-    state * res = NULL;
+    const state * res = NULL;
     if ( b1Rel() )
     {
-        res = &sPrgCErrC
+        res = &sPrgCErrC;
     }
     else if ( timerEq0() )
     {
-        res = &sPrgShow
+        res = &sPrgShow;
     }
     return res;
 }
-state * check_sPrgCErrC(void)
+const state * check_sPrgCErrC(void)
 {
-    res = NULL;
-    res = &sPrgCErrB
+    const state * res = NULL;
+    res = &sPrgCErrB;
     return res;
 }
 

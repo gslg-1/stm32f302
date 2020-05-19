@@ -4,12 +4,13 @@
 #include "dbg_src.h"
 
 /* typedefs */
-typedef void (*action)(void);
-typedef state * (*transition)(void);
 
 typedef struct state_s state;
-typedef struct transition_s transition;
 typedef struct prg_handle_s prg_handle;
+
+typedef void (*action)(void);
+typedef const state * (*transition)(void);
+
 
 /* External Functions */
 /* Enums */
