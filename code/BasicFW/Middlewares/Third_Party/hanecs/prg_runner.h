@@ -325,7 +325,7 @@ uint8_t hPrg1_init(void)
     /* Program Selection - Button */
     sPrgShow.act = actPrintCurrentPrg;
     sPrgShow.trst_table = ttsPrgShow;
-    sPrgShow.size = 1;
+    sPrgShow.size = 2;
 
     sPrgSwtch.act = actNextPrg;
     sPrgSwtch.trst_table = ttsPrgSwtch;

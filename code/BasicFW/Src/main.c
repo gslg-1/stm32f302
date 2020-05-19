@@ -152,6 +152,7 @@ uint8_t getCurPrg(void);
   */
 int main(void)
 {
+  while(1){}
   /* USER CODE BEGIN 1 */
 #ifndef __UTEST
 
@@ -219,7 +220,7 @@ int main(void)
     DBG_Error_Handler( MOD_MAIN_C , FNC_main , RSN_INIT_FAILURE , 0 );
   }
   /* USER CODE END RTOS_THREADS */
-
+  while(1){}
   /* Start scheduler */
   osKernelStart();
  
