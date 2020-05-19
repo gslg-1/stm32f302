@@ -98,63 +98,94 @@ uint8_t b1RelAndTimerGt0(void);
 uint8_t b1RelAndTimerEq0(void);
 
 
-state * check_sPrgShow(void);
-state * check_sPrgSwtch(void);
-state * check_sPrgSwSh(void);
-state * check_sUartCmd(void);
-state * check_sPrgStart(void);
-state * check_bsPrgShow(void);
-state * check_sPrgCErr(void);
-state * check_sPrgCErrB(void);
-state * check_sPrgCErrO(void);
-state * check_sPrgCErrC(void);
-
 
 prg_handle hPrg1;
+/* Program Selection - Button */
+state sPrgShow;                                                     // Show Current Program
+state sPrgSwtch;                                                    // Switch Programm
+state sPrgSwSh;                                                     // Switch or Show
+/* Program Selection - UART */
+state sUartCmd;  
+
+/* Program Start */
+state sPrgStart;
+
+/* Program Demo */
+state sPrgDemo;                                                     // Entry Demo Programm
+
+/* Program Print all Errors */
+state sPrgHEra;                                                     // Entry Erase HNCS Flash Block
+/* Program Print all Errors */
+state sPrgTFNext;                                                     // Testprogram -Entry Write Next Flash Package
+
+/* Program Print all Errors */
+state sPrgPErr;                                                     // Entry Print Errors
+
+/* Program Create all Errors */
+state sPrgCErr;                                                     // Entry
+state sPrgCErrB;                                                    // Base
+state sPrgCErrO;                                                    // Leaf or create Error
+state sPrgCErrC;                                                    // Create Error
+
+
 /* ------------------ Program Selection - Button ------------------ */
 /** 
  * Transitions form sPrgShow 
  * Show Current Program
 */
-const state sPrgShow =
-{
-    .act = actPrintCurrentPrg;
-    .tran_t = check_sPrgShow;
+const transition ttsPrgShow[] = 
+{ 
+    {
+        .cnd = uartCmdIsAvailable,
+        .to  = &sUartCmd
+    },
+    {
+        .cnd = b1Pre,
+        .to  = &sPrgSwSh
+    }
 };
 
 /** 
  * Transitions form sPrgSwtch
  * Switch Programm
  */
-
-const state sPrgSwtch =
-{
-    .act = actNextPrg;
-    .tran_t = check_sPrgSwtch;
-}
+const transition ttsPrgSwtch[] = 
+{ 
+    {
+        .cnd = immediately,
+        .to = &sPrgShow
+    }
+};
 
 /** 
  * Transitions form sPrgSwSh 
  * 
 */
-
-const state sPrgSwSh =
-{
-    .act = actSetTimer;
-    .tran_t = check_sPrgSwSh;
-}
+const transition ttsPrgSwSh[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgSwtch
+    },
+    {
+        .cnd = timerEq0,
+        .to = &sPrgStart
+    }
+} ;
 
 /* ------------------ Program Selection - UART ------------------ */
 /** 
  * Transitions form ttsUartCmd 
  * 
 */
+const transition ttsUartCmd[] = 
+{ 
+    {
+        .cnd = immediately,
+        .to = &sPrgStart
+    }
+} ;
 
-const state sUartCmd =
-{
-    .act = actPrgStartMsg;
-    .tran_t = check_sUartCmd;
-}
 
 /* ------------------ Program Start ------------------ */
 
@@ -162,12 +193,33 @@ const state sUartCmd =
  * Transitions form sPrgStart 
  * Switch or Show
 */
-
-const state sPrgStart =
-{
-    .act = actPrgStartMsg;
-    .tran_t = check_sPrgStart;
-}
+const transition ttsPrgStart[] = 
+{ 
+    {
+        .cnd = prgEqDemo,
+        .to = &sPrgDemo
+    },
+    {
+        .cnd = prgEqHEra,
+        .to = &sPrgHEra
+    },
+    {
+        .cnd = prgEqTNext,
+        .to = &sPrgTFNext
+    },
+    {
+        .cnd = prgEqCErr,
+        .to = &sPrgCErr
+    },
+    {
+        .cnd = prgEqPErr,
+        .to = &sPrgPErr
+    },
+    {
+        .cnd = immediately,
+        .to = &sPrgSwtch
+    }
+};
 
 
 /* ------------------ Program Modes ------------------ */
@@ -175,86 +227,156 @@ const state sPrgStart =
  * Transitions form sPrgDemo 
  * Entry Demo Programm
  */
-const state sPrgDemo =
-{
-    .act = actDemoEnter;
-    .tran_t = check_bsPrgShow;
-}
+const transition ttsPrgDemo[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgShow
+    }
+};
 
 /** 
  * Transitions form sPrgPErr 
  * Entry PErr
  */
-const state sPrgHEra =
-{
-    .act = actHEraEnter;
-    .tran_t = check_bsPrgShow;
-}
+const transition ttsPrgHEra[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgShow
+    }
+};
 /** 
  * Transitions form sPrgPErr 
  * Entry PErr
  */
-
-const state sPrgTFNext =
-{
-    .act = actTFNextEnter;
-    .tran_t = check_bsPrgShow;
-}
+const transition ttsPrgTFNext[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgShow
+    }
+};
 /** 
  * Transitions form sPrgPErr 
  * Entry PErr
  */
+const transition ttsPrgPErr[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgShow
+    }
+};
 
-const state sPrgPErr =
-{
-    .act = actPErrEnter;
-    .tran_t = check_bsPrgShow;
-}
 
 /** 
  * Transitions form sPrgCErr 
  * state sPrgCErr Entry
  */
-
-const state sPrgCErr =
-{
-    .act = actCErrEnter;
-    .tran_t = check_sPrgCErr;
-}
-
+const transition ttsPrgCErr[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgCErrB
+    }
+};
 /** 
  * Transitions form sPrgCErr 
  * state sPrgCErrB Base
  */
-
-const state sPrgCErrB =
-{
-    .act = actCErrBase;
-    .tran_t = check_sPrgCErrB;
-}
+const transition ttsPrgCErrB[] = 
+{ 
+    {
+        .cnd = b1Pre,
+        .to = &sPrgCErrO
+    }
+};
 /** 
  * Transitions form sPrgCErr 
  * state sPrgCErr Leaf or create Error
  */
-
-const state sPrgCErrO =
-{
-    .act = actCErrOr;
-    .tran_t = check_sPrgCErrO;
-}
+const transition ttsPrgCErrO[] = 
+{ 
+    {
+        .cnd = b1Rel,
+        .to = &sPrgCErrC
+    },
+    {
+        .cnd = timerEq0,
+        .to = &sPrgShow
+    },
+};
 /** 
  * Transitions form sPrgCErr 
  * state sPrgCErr Create Error
  */
+const transition ttsPrgCErrC[] = 
+{ 
+    {
+        .cnd = immediately,
+        .to = &sPrgCErrB
+    }
+};
 
-const state sPrgCErrC =
-{
-    .act = actCErrCreate;
-    .tran_t = check_sPrgCErrC;
-}
 
 uint8_t hPrg1_init(void)
 {  
+    /* Program Selection - Button */
+    sPrgShow.act = actPrintCurrentPrg;
+    sPrgShow.trst_table = ttsPrgShow;
+    sPrgShow.size = 2;
+
+    sPrgSwtch.act = actNextPrg;
+    sPrgSwtch.trst_table = ttsPrgSwtch;
+    sPrgSwtch.size = 1;
+    
+    sPrgSwSh.act = actSetTimer;
+    sPrgSwSh.trst_table = ttsPrgSwSh;
+    sPrgSwSh.size = 2;
+    
+    /* Program Selection - UART */
+    sUartCmd.act = actSetCurUartPrg;
+    sUartCmd.trst_table = ttsUartCmd;
+    sUartCmd.size = 1;
+    
+    
+    /* Program Start */
+    sPrgStart.act = actPrgStartMsg;
+    sPrgStart.trst_table = ttsPrgStart;
+    sPrgStart.size = 6;
+
+    /* Program Modes */
+    /* Demo */
+    sPrgDemo.act = actDemoEnter;
+    sPrgDemo.trst_table = ttsPrgDemo;
+    sPrgDemo.size = 1;
+    /* HEra */
+    sPrgHEra.act = actHEraEnter;
+    sPrgHEra.trst_table = ttsPrgHEra;
+    sPrgHEra.size = 1;
+    /* TFNext */
+    sPrgTFNext.act = actTFNextEnter;
+    sPrgTFNext.trst_table = ttsPrgTFNext;
+    sPrgTFNext.size = 1;
+    /* PErr */
+    sPrgPErr.act = actPErrEnter;
+    sPrgPErr.trst_table = ttsPrgPErr;
+    sPrgPErr.size = 1;
+    /* CErr */
+    sPrgCErr.act = actCErrEnter;
+    sPrgCErr.trst_table = ttsPrgCErr;
+    sPrgCErr.size = 1;
+    sPrgCErrB.act = actCErrBase;
+    sPrgCErrB.trst_table = ttsPrgCErrB;
+    sPrgCErrB.size = 1;
+    sPrgCErrO.act = actCErrOr;
+    sPrgCErrO.trst_table = ttsPrgCErrO;
+    sPrgCErrO.size = 2;
+    sPrgCErrC.act = actCErrCreate;
+    sPrgCErrC.trst_table = ttsPrgCErrC;
+    sPrgCErrC.size = 1;
+
     if (prgMng_init(&hPrg1, &sPrgShow)==PRG_MNG_OK)
     {
         return PRG_MNG_OK;
@@ -433,120 +555,6 @@ void actCErrCreate(void)
     counter++;
 }
 
-state * check_sPrgShow(void)
-{
-    state * res = NULL;
-    if ( uartCmdIsAvailable() )
-    {
-        res = &sUartCmd
-    }else if( b1Pre() )
-    {
-        res = &sPrgSwSh
-    }
-    return res;
-}
-state * check_sPrgSwtch(void)
-{
-    state * res = NULL;
-    res = &sPrgShow;
-    return res;
-}
-state * check_sPrgSwSh(void)
-{
-    state * res = NULL;
-    if ( b1Rel() )
-    {
-        res = &sPrgSwtch
-    }else if( timerEq0() )
-    {
-        res = &sPrgStart
-    }
-    return res;
-}
-state * check_sUartCmd(void)
-{
-    state * res = NULL;
-    
-    res = &sPrgStart
-
-    return res;
-}
-}
-state * check_sPrgStart(void)
-{
-    state * res = NULL;
-    if ( prgEqDemo() )
-    {
-        res = &sPrgDemo
-    }
-    else if( prgEqHEra() )
-    {
-        res = &sPrgHEra
-    }
-    else if( prgEqTNext() )
-    {
-        res = &sPrgTFNext
-    }
-    else if( prgEqCErr() )
-    {
-        res = &sPrgCErr
-    }
-    else if( prgEqPErr() )
-    {
-        res = &sPrgPErr
-    }
-    else 
-    {
-        res = &sPrgSwtch
-    }
-    return res;
-}
-state * check_bsPrgShow(void)
-{
-    state * res = NULL;
-    if ( b1Rel() )
-    {
-        res = &sPrgShow
-    }
-    return res;
-}
-state * check_sPrgCErr(void)
-{
-    state * res = NULL;
-    if ( b1Rel() )
-    {
-        res = &sPrgCErrB
-    }
-    return res;
-}
-state * check_sPrgCErrB(void)
-{
-    state * res = NULL;
-    if ( b1Pre() )
-    {
-        res = &sPrgCErrO
-    }
-    return res;
-}
-state * check_sPrgCErrO(void)
-{
-    state * res = NULL;
-    if ( b1Rel() )
-    {
-        res = &sPrgCErrC
-    }
-    else if ( timerEq0() )
-    {
-        res = &sPrgShow
-    }
-    return res;
-}
-state * check_sPrgCErrC(void)
-{
-    res = NULL;
-    res = &sPrgCErrB
-    return res;
-}
 
 /* Conditions*/
 uint8_t b1Pre(void)

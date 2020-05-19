@@ -5,7 +5,7 @@
 
 /* typedefs */
 typedef void (*action)(void);
-typedef uint8_t (*condition)(void);
+typedef state * (*transition)(void);
 
 typedef struct state_s state;
 typedef struct transition_s transition;
@@ -17,14 +17,10 @@ typedef struct prg_handle_s prg_handle;
 
 /* Publice Types */
 struct state_s {
-    action act;
-    const transition * trst_table;
-    uint8_t size;
+    const action act;
+    const transition const * tran_t;
 } ;
-struct transition_s {
-    condition cnd;
-    const state * to;
-} ;
+
 struct prg_handle_s {
     const state * current;
 } ;
@@ -36,7 +32,7 @@ uint8_t prgMng_init( prg_handle * hprg , const state * init);
 uint8_t prgMng_deinit( prg_handle * hprg);
 
 const state * prgMng_getState( prg_handle * hprg );
-uint8_t prgMng_check( prg_handle * hprg );
+uint8_t prgMng_checkTrans( prg_handle * hprg );
 
 
 #endif

@@ -39,14 +39,17 @@ const state * prgMng_getState(  prg_handle * hprg )
 */
 uint8_t prgMng_checkTrans( prg_handle * hprg )
 {
-    if (hprg != 0 && hprg->current != 0 && hprg->current->tran_t != NULL )
+    if (hprg != 0 && hprg->current != 0 )
     {
-        state * res = hprg->current->tran_t();
-        if (res != NULL)
+        for (uint8_t i = 0; hprg->current->tran_t[i] != NULL ; i++)
         {
-            res->act();
-            hprg->current = res;
-            return PRG_MNG_OK;
+            state * goal = hprg->current->tran_t[i]();
+            if (goal != NULL)
+            {
+                goal->act();
+                hprg->current = goal;
+                return PRG_MNG_OK;
+            } 
         }
     }
     return PRG_MNG_FAILED;
