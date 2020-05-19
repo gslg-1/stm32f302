@@ -63,18 +63,22 @@ Reset_Handler:
   ldr   sp, =_estack    /* Atollic update: set stack pointer */
 
 /* Copy the data segment initializers from flash to SRAM */
+  /* ------------------------ magic hncs fnx ------------------------ */
+  	movs	r1, #0
+ 	ldr	r0, =0x20000000
+ 	ldr	r3, =0x20003FFF
+RamClear:
+	str r0, [r0,r1]
+	adds	r0, r0, #4
+	cmp	r0, r3
+	bcc RamClear
+ 
+ /* ------------------------ magic hncs fnx ------------------------ */
   movs	r1, #0
-  b	LoopCopyDataInit
-/**
- *RamClear:
- *	ldr	r0, =0x20000000
- *	ldr	r3, =0x20003FFF
- *	movs	r0, #0
- *	adds	r0, r0, #4
- *	cmp	r2, r3
- *	bcc RamClear
- *	b Reset_Handler
-*/
+  b	LoopCopyDataInit	
+
+
+
 CopyDataInit:
 
 	ldr	r3, =_sidata
