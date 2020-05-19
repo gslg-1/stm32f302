@@ -133,7 +133,7 @@ state sPrgCErrC;                                                    // Create Er
  * Transitions form sPrgShow 
  * Show Current Program
 */
-transition ttsPrgShow[] = 
+const transition ttsPrgShow[] = 
 { 
     {
         .cnd = uartCmdIsAvailable,
@@ -149,7 +149,7 @@ transition ttsPrgShow[] =
  * Transitions form sPrgSwtch
  * Switch Programm
  */
-transition ttsPrgSwtch[] = 
+const transition ttsPrgSwtch[] = 
 { 
     {
         .cnd = immediately,
@@ -161,7 +161,7 @@ transition ttsPrgSwtch[] =
  * Transitions form sPrgSwSh 
  * 
 */
-transition ttsPrgSwSh[] = 
+const transition ttsPrgSwSh[] = 
 { 
     {
         .cnd = b1Rel,
@@ -178,7 +178,7 @@ transition ttsPrgSwSh[] =
  * Transitions form ttsUartCmd 
  * 
 */
-transition ttsUartCmd[] = 
+const transition ttsUartCmd[] = 
 { 
     {
         .cnd = immediately,
@@ -193,7 +193,7 @@ transition ttsUartCmd[] =
  * Transitions form sPrgStart 
  * Switch or Show
 */
-transition ttsPrgStart[] = 
+const transition ttsPrgStart[] = 
 { 
     {
         .cnd = prgEqDemo,
@@ -227,7 +227,7 @@ transition ttsPrgStart[] =
  * Transitions form sPrgDemo 
  * Entry Demo Programm
  */
-transition ttsPrgDemo[] = 
+const transition ttsPrgDemo[] = 
 { 
     {
         .cnd = b1Rel,
@@ -239,7 +239,7 @@ transition ttsPrgDemo[] =
  * Transitions form sPrgPErr 
  * Entry PErr
  */
-transition ttsPrgHEra[] = 
+const transition ttsPrgHEra[] = 
 { 
     {
         .cnd = b1Rel,
@@ -250,7 +250,7 @@ transition ttsPrgHEra[] =
  * Transitions form sPrgPErr 
  * Entry PErr
  */
-transition ttsPrgTFNext[] = 
+const transition ttsPrgTFNext[] = 
 { 
     {
         .cnd = b1Rel,
@@ -261,7 +261,7 @@ transition ttsPrgTFNext[] =
  * Transitions form sPrgPErr 
  * Entry PErr
  */
-transition ttsPrgPErr[] = 
+const transition ttsPrgPErr[] = 
 { 
     {
         .cnd = b1Rel,
@@ -274,7 +274,7 @@ transition ttsPrgPErr[] =
  * Transitions form sPrgCErr 
  * state sPrgCErr Entry
  */
-transition ttsPrgCErr[] = 
+const transition ttsPrgCErr[] = 
 { 
     {
         .cnd = b1Rel,
@@ -285,7 +285,7 @@ transition ttsPrgCErr[] =
  * Transitions form sPrgCErr 
  * state sPrgCErrB Base
  */
-transition ttsPrgCErrB[] = 
+const transition ttsPrgCErrB[] = 
 { 
     {
         .cnd = b1Pre,
@@ -296,7 +296,7 @@ transition ttsPrgCErrB[] =
  * Transitions form sPrgCErr 
  * state sPrgCErr Leaf or create Error
  */
-transition ttsPrgCErrO[] = 
+const transition ttsPrgCErrO[] = 
 { 
     {
         .cnd = b1Rel,
@@ -311,7 +311,7 @@ transition ttsPrgCErrO[] =
  * Transitions form sPrgCErr 
  * state sPrgCErr Create Error
  */
-transition ttsPrgCErrC[] = 
+const transition ttsPrgCErrC[] = 
 { 
     {
         .cnd = immediately,

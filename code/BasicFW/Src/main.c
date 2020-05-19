@@ -154,7 +154,6 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 #ifndef __UTEST
-
   /* USER CODE END 1 */
   
   /* MCU Configuration--------------------------------------------------------*/
@@ -363,7 +362,7 @@ void StartSysCtrlTask(void *argument)
     if (rxPointer == rxGarbage && rxCounter > 0)
     {
       uint8_t cmd = _PRG_END;
-      state * currentState = NULL;
+      const state * currentState = NULL;
       /* Extract UART Command */
       cmd = extractUARTCmd( rxBuffer );
 
