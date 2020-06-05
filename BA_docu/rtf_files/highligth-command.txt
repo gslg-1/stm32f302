@@ -1,0 +1,1 @@
+highlight -ioriginal.mk -ibasicRule.mk -i clean.mk -i all.mk  -O RTF -d rtf_files -n -v -j3
