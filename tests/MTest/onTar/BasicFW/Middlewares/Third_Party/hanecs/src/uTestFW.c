@@ -19,5 +19,5 @@ void assertionEqual_uint8(char * testName, uint8_t size, uint8_t exp, uint8_t fx
   memset(sValue,0,4);
   itoa(fxnResult,sValue,10);
   sendUartMsg(sValue , 4);
-  sendUartMsg("\n\n" ,sizeof("\n\n"));
+  sendUartMsg("\n" ,sizeof("\n"));
 }
