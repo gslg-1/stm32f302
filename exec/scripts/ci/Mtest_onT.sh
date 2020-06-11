@@ -7,6 +7,12 @@ RESULT=1
 # Connected Device
 DEVICE=$(ls /dev/ | grep ttyS)
 
+function restartDev()
+{
+    ST-LINK_CLI -c -rst
+    printf '\n' | ST-LINK_CLI -c -run
+}
+
 function bildPro()
 {
     cd tests/MTest/onTar/BasicFW
@@ -17,8 +23,7 @@ function bildPro()
 function clearTTYBuff()
 {
     # Loade known end
-    ST-LINK_CLI -c -rst
-    ST-LINK_CLI -c -run
+    restartDev
     # read until end
     while [ ! -z "$RES_DONE" ] && read LINE_RES < /dev/$DEVICE
     do
@@ -35,9 +40,7 @@ function inspectRes()
 {
     local LOC_RES_VAL=$1
     # Get M-TEST Result
-    ST-LINK_CLI -c -rst
-    ST-LINK_CLI -c -run
-
+    restartDev
     # Inspect Result
     while [ ! -z "$RES_DONE" ] && read LINE_RES < /dev/$DEVICE
     do
@@ -65,8 +68,18 @@ clearTTYBuff
 echo "DBG - Start inspection"
 # Inspect Result
 inspectRes RESULT
-echo 'Finished shell script' $0 '.'
 
-# Result 
+echo ""
+echo ""
+echo ""
+echo ""
+echo 'Result:'
+if [ $RESULT -eq 0 ]
+then 
+    echo "On Target Module Test - Success"
+else
+    echo "On Target Module Test - Success"
+fi
+
 echo $RESULT
 #EOF

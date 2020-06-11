@@ -3,8 +3,19 @@
 echo 'Start shell script '$0
 
 cd tests/MTest/offTar/
-M_RES=$(make)
+make
 cd ../../../
-return $M_RES
-echo 'Finished shell script' $0 '.'
+
+echo ""
+echo ""
+echo ""
+echo ""
+echo "Result:"
+echo ""
+./output/offTarMTest/all_tests.exe -v
+echo ""
+echo ""
+echo "Failures:"
+echo ""
+./output/offTarMTest/all_tests.exe -s
 #EOF
