@@ -18,6 +18,9 @@ pipeline
             steps
             {
                 echo "Check if all required Tests, Modules, Reviews  and Designs of the feature are available "
+                sh('''
+                    ./exec/scripts/ci/check_av.sh
+                ''')
             }
         }
         stage('Build')
@@ -25,6 +28,9 @@ pipeline
             steps
             {
                 echo "Build Project"
+                sh('''
+                    ./exec/scripts/ci/build.sh
+                ''')
             }
         }
         stage('Test & Analysis')
@@ -36,13 +42,29 @@ pipeline
                     steps
                     {
                         echo "Static Analysis"
+                        sh('''
+                            ./exec/scripts/ci/staticAnalysis.sh
+                        ''')
                     }
                 }
-                stage('Unit Test (off target)')
+                stage('Module Test (off target)')
                 {
                     steps
                     {
-                        echo "Unit Test"
+                        echo "Module Test (off Target)"
+                        sh('''
+                            ./exec/scripts/ci/Mtest_offT.sh
+                        ''')
+                    }
+                }
+                stage('Module Test (on target)')
+                {
+                    steps
+                    {
+                        echo "Module Test (on Target)"
+                        sh('''
+                            Mtest_onT.sh
+                        ''')
                     }
                 }
             }
