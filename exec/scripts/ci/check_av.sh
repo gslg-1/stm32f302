@@ -47,6 +47,7 @@ function checkAvailabilityViaCommits()
 BRANCH_NAME=$(git branch --show-current)
 # Get List of Requirde OffTarget Tests
 OFF_TAR_LIST=$(getRequiredModules /docs/dsgn/ci_specs/$BRANCH_NAME.spec)
+
 # Get List of Requirde OnTarget Tests
 ON_TAR_LIST=$(getRequiredModules /docs/dsgn/ci_specs/onTargetMTests/$BRANCH_NAME.spec)
 
