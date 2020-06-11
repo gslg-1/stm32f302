@@ -12,28 +12,33 @@ function checkAvailabilityViaCommits()
 {
     local IS_PART_OF=0
     local RESULT='FAILURE'
-    local COMMIT_HISTORY=$(git log --pretty=format:"%h %s")
-    local MOD_OFF_LIST=$(echo $COMMIT_HISTORY | grep Module(off): )
-    local MOD_ON_LIST=$(echo $COMMIT_HISTORY | grep Module(on): )
     local LIST_TO_CHECK
-    if [ $1 -eq OFF ]
+    if [ $1 = "OFF" ]
     then
-        LIST_TO_CHECK=MOD_OFF_LIST
+        LIST_TO_CHECK=$(git log --pretty=format:"%h %s" | grep "Module(off)" | sed -n 's/.*Module(off): \([a-zA-Z0-9]*\).*/\1/p')
     else
-        LIST_TO_CHECK=MOD_ON_LIST
+        LIST_TO_CHECK=$(git log --pretty=format:"%h %s" | grep "Module(off)" | sed -n 's/.*Module(on): \([a-zA-Z0-9]*\).*/\1/p')
     fi
-    for ELEMENT_M in $LIST_TO_CHECK
+    echo $LIST_TO_CHECK
+    for ELEMENT_M in ${@:2}
     do
-        for ELEMENT_N in "${MOD_LIST[@]}"
+        for ELEMENT_N in "${LIST_TO_CHECK[@]}"
         do
-            if [ $ELEMENT_N -eq $ELEMENT_M  ]
+            echo "Check: <$ELEMENT_M | $ELEMENT_N>"
+            if [ "$ELEMENT_N" = "$ELEMENT_M" ] || [ -n "$ELEMENT_N" ]
             then 
+                echo "Match: Yes"
                 IS_PART_OF=1
                 break
+            else 
+                echo "Match: No"
             fi
         done
-        if [$IS_PART_OF -eq 0 ]
+        echo "IS_PART_OF: $IS_PART_OF"
+        echo "LIST_TO_CHECK: $LIST_TO_CHECK"
+        if [ "$IS_PART_OF" -eq 0 ]
         then
+            echo "$1 Target:"
             echo "Test of $ELEMENT_N not available"
             exit 1
         else
@@ -41,16 +46,16 @@ function checkAvailabilityViaCommits()
         fi
     done 
     echo "All Module Tests are available"
-    exit 0
+    return 0
 }
 
 BRANCH_NAME=$(git branch --show-current)
 # Get List of Requirde OffTarget Tests
-OFF_TAR_LIST=$(getRequiredModules /docs/dsgn/ci_specs/$BRANCH_NAME.spec)
+OFF_TAR_LIST=$(getRequiredModules ./docs/dsgn/ci_specs/$BRANCH_NAME.spec)
 
 # Get List of Requirde OnTarget Tests
-ON_TAR_LIST=$(getRequiredModules /docs/dsgn/ci_specs/onTargetMTests/$BRANCH_NAME.spec)
+ON_TAR_LIST=$(getRequiredModules ./docs/dsgn/ci_specs/onTargetMTests/$BRANCH_NAME.spec)
 
 # Check for availability of Tests
-checkAvailability OFF $OFF_TAR_LIST && checkAvailability ON $ON_TAR_LIST && exit 0 || exit 1
+checkAvailabilityViaCommits OFF $OFF_TAR_LIST && checkAvailabilityViaCommits ON $ON_TAR_LIST && exit 0 || exit 1
 #EOF
