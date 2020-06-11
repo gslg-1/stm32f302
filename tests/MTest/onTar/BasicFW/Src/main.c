@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "uTestFW.h"
 #include "example1.h"
 /* USER CODE END Includes */
 
@@ -56,12 +57,6 @@ enum uartRxState {
 UART_HandleTypeDef huart2;
 //DMA_HandleTypeDef hdma_usart2_rx;
 
-uint8_t uartCMD = _PRG_END;
-uint8_t rxBuffer[RX_BUFF_SIZE];
-uint8_t rxGarbage[RX_BUFF_SIZE];
-uint8_t * rxPointer = rxBuffer;
-
-uint8_t rxCounter;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -94,8 +89,6 @@ extern uint32_t _hncs_eblock_start, _hncs_eblock_end;
 /* Flash - HNCS Error Block*/
 extern uint32_t _hncs_tblock_start, _hncs_tblock_end;
 
-/* User - On Target Unit Test ----------------------------------------------- */
-void assertionEqual_uint8(uint8_t exp, uint8_t fxnResult);
 
 /* USER CODE END PV */
 
@@ -124,24 +117,6 @@ uint8_t uartCmdIsAvailable(void);
 uint8_t getUartCmd(void);
 void resetUartCom(void);
 
-/* User - Data Logger Function Prototyps ------------------------------------ */
-uint8_t flash_write32( uint32_t * block_p, uint32_t data);
-uint8_t flash_erase32( uint32_t * block_p );
-uint8_t flash_eraseHNCS( void );
-
-/* User - Program Manager Function Prototyps */
-void sendUartMsgInt(uint32_t num, uint8_t base);
-void setCurPrg(uint8_t prg);
-void setTimer(uint32_t value);
-uint8_t getButtonState(void);
-uint8_t getPrgTimer0Value(void);
-uint8_t getCurPrg(void);
-
-/* User - CPAChecker Test */
-void cpaCheckerTest(void);
-uint8_t cpaCheckerIntCast(unsigned int value);
-uint8_t cpaCheckerGT(uint8_t nValue , uint8_t nThreshold );
-uint8_t cpaCheckerBadMemAcces(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -180,12 +155,6 @@ int main(void)
   MX_DMA1_Init();
   MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */  
-  if ( hPrg1_init() != PRG_MNG_OK )      
-    { sendUartMsg("Initialization of Programm P1 Failed.\n", sizeof("Initialization of Programm P1 Failed.\n")); }                        /* Initialize Program Manager *//* Initialize Program Manager */
-  if ( initErrorLog( (uint32_t*)&_hncs_eblock_start , (uint32_t*)&_hncs_eblock_end ) != PRG_MNG_OK )
-    { sendUartMsg("Initialization of Error Logger Failed.\n", sizeof("Initialization of Error Logger Failed.\n")); }                    /* Initialize Program Manager */
- 
-  initUARTMsg();
   
   /* USER CODE END 2 */
   /* Init scheduler */
@@ -234,6 +203,7 @@ int main(void)
   assertionEqual_uint8("Test getLeast lower boarder", sizeof("Test getLeast lower boarder") , 0 , getLeast(1,0));
   
   sendUartMsg("Finished on target Unit-Test\n",sizeof("Finished on target Unit-Test\n"));
+  sendUartMsg("<Done>\n",sizeof("<Done>\n"));   //Command for Host Sys
   while (1)
   {
     /* USER CODE END WHILE */
@@ -267,7 +237,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLL_MUL16;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
-    DBG_Error_Handler(MOD_MAIN_C , FNC_SystemClock_Config , 0 , 0);
+    Error_Handler();
   }
   /** Initializes the CPU, AHB and APB busses clocks 
   */
@@ -280,7 +250,7 @@ void SystemClock_Config(void)
 
   if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
   {
-    DBG_Error_Handler(MOD_MAIN_C , FNC_SystemClock_Config , 1 , 0);
+    Error_Handler();
   }
 }
 
@@ -311,7 +281,7 @@ static void MX_USART2_UART_Init(void)
   
   if (HAL_UART_Init(&huart2) != HAL_OK)
   {
-    DBG_Error_Handler( MOD_MAIN_C , FNC_MX_DMA_UART2_RX_Init , 0 , 0 );
+    Error_Handler();
   }
 
   
@@ -359,58 +329,6 @@ static void MX_GPIO_Init(void)
 
 
 /* Get started every x ms or, after some especial initilaization via Interrupt. */
-void StartSysCtrlTask(void *argument)
-{
-  /* Start UART RX the first time in IRQ mode  */
-  sendUartMsg( "Init SysCtrlTask\n" , sizeof( "Init SysCtrlTask\n" ) );
-  HAL_UART_Receive_DMA( &huart2 , rxBuffer , RX_BUFF_SIZE );
-  char respons[RESP_SIZE];
-  for(;;)
-  {
-    /* Check if new Command is Free */
-    if (rxPointer == rxGarbage && rxCounter > 0)
-    {
-      uint8_t cmd = _PRG_END;
-      const state * currentState = NULL;
-      /* Extract UART Command */
-      cmd = extractUARTCmd( rxBuffer );
-
-      memset( rxBuffer , 0 , RX_BUFF_SIZE );
-      memset( respons , 0 , RESP_SIZE );
-      currentState = prgMng_getState( &hPrg1 );
-      if (currentState != NULL )
-      {
-        if ( currentState != &sPrgShow )
-        {
-          strcpy( respons,"BUSY\n");
-        }
-        else if ( cmd >= _PRG_END)
-        {
-          strcpy( respons , "UNKNOWN\n" );
-        }
-        else
-        {
-          uartCMD = cmd;
-          strcpy( respons , "ACKNOWLEDGE\n" );
-        }
-      }
-      else
-      {
-        
-        sendUartMsg("DBG_TASK4\n",sizeof("DBG_TASK1\n"));
-      }
-      sendUartMsg( respons , RESP_SIZE);
-      rxCounter--;
-    }
-    /* Send Respond for all other received packages */
-    while (rxCounter > 0)
-    {
-      sendUartMsg( "BUSY\n" , RESP_SIZE);
-      rxCounter--;
-    }
-    osDelay(250);
-  }
-}
 
 void StartSmplTimerTask(void *argument)
 {
@@ -418,10 +336,6 @@ void StartSmplTimerTask(void *argument)
   for(;;)
   {
     /* Add the needet Timers here */
-    if (prgMng_timer0 > 0 )
-    {
-      prgMng_timer0--;
-    }
     HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);         
     osDelay(125);
   }
@@ -435,240 +349,11 @@ static void MX_DMA1_Init(void)
   HAL_NVIC_EnableIRQ( DMA1_Channel6_IRQn );
 }
 
-/* User - Callback Functions --------------------------------------------------------- */
-void HAL_UART_RxHalfCpltCallback(UART_HandleTypeDef *huart)
-{
-
-}
-void HAL_UART_RxCpltCallback(struct __UART_HandleTypeDef *huart)
-{
-  //sendUartMsg("callback\n",sizeof("callback\n"));
-  HAL_GPIO_WritePin( LD2_GPIO_Port , LD2_Pin , GPIO_PIN_RESET);
-  if (huart->Instance == USART2)
-  {
-    rxCounter++;
-    if ( huart->pRxBuffPtr == rxBuffer )
-    {
-      rxPointer = rxGarbage;
-    }
-  }
-  else
-  {
-    /* Rx Ring Buffer overflow */
-    DBG_Error_Handler( MOD_MAIN_C , FNC_HAL_UART_RxCpltCallback , RSN_BUFFER_OVERFLOW , 0 );
-  }
-  
-}
-/* user - UART Communication Function Implementations --------------------------------- */
-uint8_t extractUARTCmd( uint8_t * data )
-{
-  uint8_t res = (uint8_t)_PRG_END;
-  res = (uint8_t)atoi((char*)data);
-  return res;
-}
-uint8_t uartCmdIsAvailable(void)
-{
-  if ( uartCMD != (uint8_t)_PRG_END )
-  {
-    return PRG_MNG_OK;
-  }
-  return PRG_MNG_FAILED;
-}
-uint8_t getUartCmd(void)
-{
-  return uartCMD;
-}
-void resetUartCom(void)
-{
-  uartCMD = (uint8_t)_PRG_END;
-  rxPointer = rxBuffer;
-}
-/* user - Common Function Implementations --------------------------------------------- */
-void initUARTMsg( void )
-{
-  char address[33] = {0};
-  sendUartMsg("Bachelorarbeit von gslg\n", sizeof("Bachelorarbeit von gslg\n"));
-
-  
-  sendUartMsg("HNCS Test Block: ", sizeof("HNCS Test Block: "));
-  sendUartMsg("From: ", sizeof("From: "));
-  itoa((uint32_t)&_hncs_tblock_start,address,16);
-  sendUartMsg(address, 33);
-  sendUartMsg(" To: ", sizeof(" To: "));
-  memset(address,0,33);
-  itoa((uint32_t)&_hncs_tblock_end,address,16);
-  sendUartMsg(address, 33);
-  sendUartMsg("\n", sizeof("\n"));
-  
-  
-  sendUartMsg("HNCS Error Block: ", sizeof("HNCS Error Block: "));
-  sendUartMsg("From: ", sizeof("From: "));
-  memset(address,0,33);
-  itoa((uint32_t)&_hncs_eblock_start,address,16);
-  sendUartMsg(address, 33);
-  sendUartMsg(" To: ", sizeof(" To: "));
-  memset(address,0,33);
-  itoa((uint32_t)&_hncs_eblock_end,address,16);
-  sendUartMsg(address, 33);
-  sendUartMsg("\n", sizeof("\n"));
-  
-  sendUartMsg("HNCS Warning Block: ", sizeof("HNCS Warning Block: "));
-  sendUartMsg("From: ", sizeof("From: "));
-  memset(address,0,33);
-  itoa((uint32_t)&_hncs_wblock_start,address,16);
-  sendUartMsg(address, 33);
-  sendUartMsg(" To: ", sizeof(" To: "));
-  memset(address,0,33);
-  itoa((uint32_t)&_hncs_wblock_end,address,16);
-  sendUartMsg(address, 33);
-  sendUartMsg("\n", sizeof("\n"));
-
-  sendUartMsg("Initilaization completed\n",sizeof("Initilaization: completed\n"));
-  sendUartMsg("\n", sizeof("\n"));
-}
-/* user - Flash Function Implementations ---------------------------------------------- */
-uint8_t flash_write32( uint32_t * block_p, uint32_t data )
-{
-  uint8_t res = PRG_MNG_FAILED;
-
-  sendUartMsg("main.c (1)\n",sizeof("main.c (1)\n"));
-  char Address[33] = {0};                                /* todo - delete */
-  itoa((int)block_p,Address,16);                             /* todo - delete */
-  sendUartMsg("Address: ",sizeof("Address: "));          /* todo - delete */
-  sendUartMsg(Address,33);                               /* todo - delete */
-  sendUartMsg("\n",sizeof("\n"));                        /* todo - delete */
-
-  HAL_FLASH_Unlock();
-  if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , (uint64_t)data ) == HAL_OK)
-  {
-    res = PRG_MNG_OK; 
-  }
-  HAL_FLASH_Lock();
-  return res;
-}
-uint8_t flash_erase32( uint32_t * block_p )
-{
-  uint8_t res = PRG_MNG_FAILED;
-  
-  sendUartMsg("main.c (0)\n",sizeof("main.c (1)\n"));    /* todo - delete */
-  char Address[33] = {0};                                /* todo - delete */
-  itoa((int)block_p,Address,16);                         /* todo - delete */
-  sendUartMsg("Address: ",sizeof("Address: "));          /* todo - delete */
-  sendUartMsg(Address,33);                               /* todo - delete */
-  sendUartMsg("\n",sizeof("\n"));                        /* todo - delete */
-
-  HAL_FLASH_Unlock();
-  if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)block_p , (uint32_t)0xFFFFFFFF ) == HAL_OK) 
-  {  
-    sendUartMsg("Successfull flash_erase32\n",sizeof("Successfull flash_erase32\n"));
-    res = PRG_MNG_OK; 
-  }
-  HAL_FLASH_Lock();
-
-  return res;
-}
-uint8_t flash_eraseHNCS( void )
-{
-  uint8_t res = PRG_MNG_FAILED;
-  static FLASH_EraseInitTypeDef f_eitf;
-  uint32_t pE;
-
-  f_eitf.TypeErase = FLASH_TYPEERASE_PAGES;
-  f_eitf.PageAddress = (uint32_t)&_hncs_tblock_start;
-  f_eitf.NbPages = (uint32_t)2;
-
-  HAL_FLASH_Unlock();
-  
-  HAL_FLASHEx_Erase( &f_eitf , &pE );
-  if (HAL_FLASHEx_Erase( &f_eitf , &pE )== HAL_OK) 
-  {  
-    sendUartMsg("Flash Erase Successfull\n",sizeof("Flash Erase Successfull\n"));
-    res = PRG_MNG_OK; 
-  }
-  HAL_FLASH_Lock();
-  return res;
-}
-uint8_t flash_writeNext( void )
-{
-  static uint32_t * address = &_hncs_tblock_start;
-  uint8_t res = PRG_MNG_FAILED;
-  
-  sendUartMsg("Test Write\n",sizeof("Test Write"));
-  eLogData testLog = {
-    .signature = (uint32_t)address,
-    .module = (uint8_t)123,
-    .function = (uint8_t)1,
-    .number = (uint8_t)2,
-    .value = (uint8_t)3
-  } ;
-
-  HAL_FLASH_Unlock();
-  if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)address , *((uint32_t*)&testLog) ) == HAL_OK ) 
-  {  
-    sendUartMsg("(1)\n",sizeof("(1)\n"));
-    if ( HAL_FLASH_Program( FLASH_TYPEPROGRAM_WORD , (uint32_t)(address+1) , *(((uint32_t*)&testLog)+1) ) == HAL_OK ) 
-    {  
-      sendUartMsg("(2)\n",sizeof("(1)\n"));
-      res = PRG_MNG_OK;
-    }
-  }
-  sendUartMsg("(3)\n",sizeof("(1)\n"));
-  HAL_FLASH_Lock();
-  address += 2;
-  return res;
-}
 
 /* user - Program Manager Function Implementations ------------------------------------ */
-void setTimer(uint32_t value)
-{
-  prgMng_timer0 = value;
-}
 void sendUartMsg(char * str, uint8_t length)
 {
   HAL_UART_Transmit(&huart2,(uint8_t*)str,length,100);
-}
-void sendUartMsgInt( uint32_t num , uint8_t base )
-{
-  char numStr[20] = { 0 };
-  itoa(num,numStr,base);
-  sendUartMsg(numStr, 20);
-}
-uint8_t getButtonState(void)
-{
-  return HAL_GPIO_ReadPin(B1_GPIO_Port,B1_Pin);
-}
-uint8_t getPrgTimer0Value(void)
-{
-  return prgMng_timer0;
-}
-
-/* User - On Target Unit Test*/
-void assertionEqual_uint8(char * testName, uint8_t size, uint8_t exp, uint8_t fxnResult)
-{
-  char sValue[4] = {0};
-  sendUartMsg(testName ,size);
-  if(exp == fxnResult)
-  {
-    sendUartMsg(" - Sucess : exp = " ,sizeof(" - Sucess : exp = "));
-    itoa(sValue,exp,10);
-    sendUartMsg(sValue , 4);
-    sendUartMsg("; fxnRes = " ,sizeof("; fxnRes = "));
-    memset(sValue,0,4);
-    itoa(fxnResult,exp,10);
-    sendUartMsg(sValue , 4);
-    sendUartMsg("\n\n" ,sizeof("\n\n"));
-  }
-  else
-  {
-    sendUartMsg(" - Failed : exp = " ,sizeof(" - Failed : exp = "));
-    itoa(sValue,exp,10);
-    sendUartMsg(sValue , 4);
-    sendUartMsg("; fxnRes = " ,sizeof("; fxnRes = "));
-    memset(sValue,0,4);
-    itoa(fxnResult,exp,10);
-    sendUartMsg(sValue , 4);
-    sendUartMsg("\n\n" ,sizeof("\n\n"));
-  } 
 }
 
 /* USER CODE END 4 */
@@ -687,7 +372,6 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */  
   for(;;)
   {
-    prgMng_checkTrans( &hPrg1 );
     osDelay(1);
   }
   /* USER CODE END 5 */ 

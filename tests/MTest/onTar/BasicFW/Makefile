@@ -70,9 +70,9 @@ Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2/cmsis_os2.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
 Src/stm32f3xx_hal_timebase_tim.c \
-Middlewares/Third_Party/hanecs/src/prg_mng.c \
-Middlewares/Third_Party/hanecs/src/dbg_logger.c \
-Middlewares/Third_Party/experimental/src/example1.c
+Middlewares/Third_Party/hanecs/src/uTestFW.c \
+Middlewares/Third_Party/experimental/src/example1.c 
+
 
 
 # ASM sources
@@ -140,8 +140,7 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32F3xx/Include \
 -IDrivers/CMSIS/Include \
 -IMiddlewares/Third_Party/hanecs/inc \
--IMiddlewares/Third_Party/hanecs \
--IMiddlewares/Third_Party/experimental
+-IMiddlewares/Third_Party/experimental/inc
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections
@@ -172,8 +171,6 @@ LDSCRIPT = STM32F302R8Tx_FLASH.ld
 LIBS = -lc -lm -lnosys 
 LIBDIR = 
 LDFLAGS = $(MCU) -specs=nano.specs -T$(LDSCRIPT) $(LIBDIR) $(LIBS) -Wl,-Map=$(BUILD_DIR)/$(TARGET).map,--cref -Wl,--gc-sections
-
-PREBUILDS = $(addprefix $(PREBUILD_DIR)/,$(notdir $(C_SOURCES:.c=.p.c)))
 
 # default action: build all
 
@@ -212,11 +209,9 @@ $(BUILD_DIR):
 #######################################
 clean:
 	-rm -fR $(BUILD_DIR)
-	-rm -fR $(PREBUILD_DIR)
 #######################################
 # dependencies
 #######################################
 
 -include $(wildcard $(BUILD_DIR)/*.d)
--include $(wildcard $(PREBUILD_DIR)/*.d)
 # *** EOF ***
