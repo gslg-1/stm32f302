@@ -69,6 +69,16 @@ pipeline
                 }
             }
         }
+        stage('Flash')
+        {
+            steps
+            {
+                echo "Flash Project"
+                sh('''
+                    ./exec/scripts/ci/flash.sh
+                ''')
+            }
+        }
         stage('Deploy')
         {
             steps

@@ -13,8 +13,16 @@ function checkAvailabilityViaCommits()
     local IS_PART_OF=0
     local RESULT='FAILURE'
     local COMMIT_HISTORY=$(git log --pretty=format:"%h %s")
-    local MOD_LIST=$(echo $COMMIT_HISTORY | grep Module: )
-    for ELEMENT_M in "$@"
+    local MOD_OFF_LIST=$(echo $COMMIT_HISTORY | grep Module(off): )
+    local MOD_ON_LIST=$(echo $COMMIT_HISTORY | grep Module(on): )
+    local LIST_TO_CHECK
+    if [ $1 -eq OFF ]
+    then
+        LIST_TO_CHECK=MOD_OFF_LIST
+    else
+        LIST_TO_CHECK=MOD_ON_LIST
+    fi
+    for ELEMENT_M in $LIST_TO_CHECK
     do
         for ELEMENT_N in "${MOD_LIST[@]}"
         do
@@ -43,5 +51,5 @@ OFF_TAR_LIST=$(getRequiredModules /docs/dsgn/ci_specs/$BRANCH_NAME.spec)
 ON_TAR_LIST=$(getRequiredModules /docs/dsgn/ci_specs/onTargetMTests/$BRANCH_NAME.spec)
 
 # Check for availability of Tests
-checkAvailability $OFF_TAR_LIST && checkAvailability  $ON_TAR_LIST && exit 0 || exit 1
+checkAvailability OFF $OFF_TAR_LIST && checkAvailability ON $ON_TAR_LIST && exit 0 || exit 1
 #EOF
