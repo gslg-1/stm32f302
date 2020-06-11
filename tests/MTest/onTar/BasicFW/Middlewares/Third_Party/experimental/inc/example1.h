@@ -11,6 +11,7 @@
 
 uint8_t getGreatest(uint8_t valueA, uint8_t valueB);
 
+uint8_t getLeast(uint8_t valueA, uint8_t valueB);
 
 
 

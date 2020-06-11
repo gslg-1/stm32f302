@@ -71,7 +71,8 @@ Middlewares/Third_Party/FreeRTOS/Source/portable/MemMang/heap_4.c \
 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F/port.c \
 Src/stm32f3xx_hal_timebase_tim.c \
 Middlewares/Third_Party/hanecs/src/prg_mng.c \
-Middlewares/Third_Party/hanecs/src/dbg_logger.c
+Middlewares/Third_Party/hanecs/src/dbg_logger.c \
+Middlewares/Third_Party/experimental/src/example1.c
 
 
 # ASM sources
@@ -139,7 +140,8 @@ C_INCLUDES =  \
 -IDrivers/CMSIS/Device/ST/STM32F3xx/Include \
 -IDrivers/CMSIS/Include \
 -IMiddlewares/Third_Party/hanecs/inc \
--IMiddlewares/Third_Party/hanecs 
+-IMiddlewares/Third_Party/hanecs \
+-IMiddlewares/Third_Party/experimental
 
 # compile gcc flags
 ASFLAGS = $(MCU) $(AS_DEFS) $(AS_INCLUDES) $(OPT) -Wall -fdata-sections -ffunction-sections

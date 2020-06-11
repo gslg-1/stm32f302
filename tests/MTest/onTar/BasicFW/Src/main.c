@@ -24,8 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "prg_runner.h"
-#include "errorLogger.h"
+#include "example1.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +43,8 @@ enum uartRxState {
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define RX_BUFF_SIZE  2
+
+#define RESP_SIZE 15
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -93,12 +94,8 @@ extern uint32_t _hncs_eblock_start, _hncs_eblock_end;
 /* Flash - HNCS Error Block*/
 extern uint32_t _hncs_tblock_start, _hncs_tblock_end;
 
-
-
-/* User - Common Variables -------------------------------------------------- */
-
-/* User - Program Manager Variables ----------------------------------------- */
-
+/* User - On Target Unit Test ----------------------------------------------- */
+void assertionEqual_uint8(uint8_t exp, uint8_t fxnResult);
 
 /* USER CODE END PV */
 
@@ -139,6 +136,12 @@ void setTimer(uint32_t value);
 uint8_t getButtonState(void);
 uint8_t getPrgTimer0Value(void);
 uint8_t getCurPrg(void);
+
+/* User - CPAChecker Test */
+void cpaCheckerTest(void);
+uint8_t cpaCheckerIntCast(unsigned int value);
+uint8_t cpaCheckerGT(uint8_t nValue , uint8_t nThreshold );
+uint8_t cpaCheckerBadMemAcces(void);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -170,7 +173,6 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
-
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -187,7 +189,7 @@ int main(void)
   
   /* USER CODE END 2 */
   /* Init scheduler */
-  osKernelInitialize();
+
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -207,24 +209,31 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
-  sysCtrlTaskHandle = osThreadNew(StartSysCtrlTask, NULL, &sysCtrlTask_attributes);
-  smplTimerTaskHandle = osThreadNew(StartSmplTimerTask, NULL, &smplTimerTask_attributes);
-  if ( sysCtrlTaskHandle == NULL || smplTimerTaskHandle == NULL )
-  {
-    DBG_Error_Handler( MOD_MAIN_C , FNC_main , RSN_INIT_FAILURE , 0 );
-  }
   /* USER CODE END RTOS_THREADS */
   /* Start scheduler */
-  osKernelStart();
  
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  sendUartMsg("Start on target Unit-Test\n",sizeof("Start on target Unit-Test\n"));
+  
+  //Testgruppe 1:
+  sendUartMsg("Testgruppe 1:\n",sizeof("Testgruppe 1:\n"));
+  assertionEqual_uint8("Test getGreatest default", sizeof("Test getGreatest default") , 33 , getGreatest(12,33));
+  assertionEqual_uint8("Test getGreatest upper boarder", sizeof("Test getGreatest upper boarder") , 255 , getGreatest(255,33));
+  assertionEqual_uint8("Test getGreatest lower boarder", sizeof("Test getGreatest lower boarder") , 1 , getGreatest(1,0));
+  
+  //Testgruppe 2:
+  sendUartMsg("Testgruppe 2:\n",sizeof("Testgruppe 1:\n"));
+  assertionEqual_uint8("Test getLeast default", sizeof("Test getLeast default") , 12 , getLeast(12,33));
+  assertionEqual_uint8("Test getLeast upper boarder", sizeof("Test getLeast upper boarder") , 33 , getLeast(255,33));
+  assertionEqual_uint8("Test getLeast lower boarder", sizeof("Test getLeast lower boarder") , 0 , getLeast(1,0));
+  
+  sendUartMsg("Finished on target Unit-Test\n",sizeof("Finished on target Unit-Test\n"));
   while (1)
   {
     /* USER CODE END WHILE */
@@ -355,7 +364,7 @@ void StartSysCtrlTask(void *argument)
   /* Start UART RX the first time in IRQ mode  */
   sendUartMsg( "Init SysCtrlTask\n" , sizeof( "Init SysCtrlTask\n" ) );
   HAL_UART_Receive_DMA( &huart2 , rxBuffer , RX_BUFF_SIZE );
-  char respons[15];
+  char respons[RESP_SIZE];
   for(;;)
   {
     /* Check if new Command is Free */
@@ -367,7 +376,7 @@ void StartSysCtrlTask(void *argument)
       cmd = extractUARTCmd( rxBuffer );
 
       memset( rxBuffer , 0 , RX_BUFF_SIZE );
-      memset( respons , 0 , 15 );
+      memset( respons , 0 , RESP_SIZE );
       currentState = prgMng_getState( &hPrg1 );
       if (currentState != NULL )
       {
@@ -387,15 +396,16 @@ void StartSysCtrlTask(void *argument)
       }
       else
       {
+        
         sendUartMsg("DBG_TASK4\n",sizeof("DBG_TASK1\n"));
       }
-      sendUartMsg( respons , 7);
+      sendUartMsg( respons , RESP_SIZE);
       rxCounter--;
     }
     /* Send Respond for all other received packages */
     while (rxCounter > 0)
     {
-      sendUartMsg( "BUSY\n" , 7);
+      sendUartMsg( "BUSY\n" , RESP_SIZE);
       rxCounter--;
     }
     osDelay(250);
@@ -632,6 +642,35 @@ uint8_t getPrgTimer0Value(void)
   return prgMng_timer0;
 }
 
+/* User - On Target Unit Test*/
+void assertionEqual_uint8(char * testName, uint8_t size, uint8_t exp, uint8_t fxnResult)
+{
+  char sValue[4] = {0};
+  sendUartMsg(testName ,size);
+  if(exp == fxnResult)
+  {
+    sendUartMsg(" - Sucess : exp = " ,sizeof(" - Sucess : exp = "));
+    itoa(sValue,exp,10);
+    sendUartMsg(sValue , 4);
+    sendUartMsg("; fxnRes = " ,sizeof("; fxnRes = "));
+    memset(sValue,0,4);
+    itoa(fxnResult,exp,10);
+    sendUartMsg(sValue , 4);
+    sendUartMsg("\n\n" ,sizeof("\n\n"));
+  }
+  else
+  {
+    sendUartMsg(" - Failed : exp = " ,sizeof(" - Failed : exp = "));
+    itoa(sValue,exp,10);
+    sendUartMsg(sValue , 4);
+    sendUartMsg("; fxnRes = " ,sizeof("; fxnRes = "));
+    memset(sValue,0,4);
+    itoa(fxnResult,exp,10);
+    sendUartMsg(sValue , 4);
+    sendUartMsg("\n\n" ,sizeof("\n\n"));
+  } 
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -648,7 +687,7 @@ void StartDefaultTask(void *argument)
   /* Infinite loop */  
   for(;;)
   {
-    prgMng_check( &hPrg1 );
+    prgMng_checkTrans( &hPrg1 );
     osDelay(1);
   }
   /* USER CODE END 5 */ 
