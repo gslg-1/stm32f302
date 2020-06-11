@@ -1,0 +1,40 @@
+pipeline
+{
+    agent any
+    environment {
+        
+    }
+    stages
+    {
+        stage('Availabity Check')
+        {
+            steps
+            {
+                echo "Start Pipeline for a Fix"
+            }
+        }
+        stage('Deploy')
+        {
+            steps
+            {
+                echo "Build Project"
+            }
+        }
+    }
+    post
+    {
+        always {
+            echo 'Clean Up the workspace'
+            deleteDir()
+        }
+        success {
+            echo 'The pipe succeded'
+        }
+        unstable {
+            echo 'The pipe is unstable'
+        }
+        failure {
+            echo 'the pipe failed'
+        }
+    }
+}

@@ -1,0 +1,74 @@
+pipeline
+{
+    agent any
+    environment {
+        LOCAL_BRANCH=local_branch
+    }
+    stages
+    {
+        stage('Start')
+        {
+            steps
+            {
+                echo "Start Pipeline for a Fix"
+            }
+        }
+        stage('Availability Check')
+        {
+            steps
+            {
+                echo "Check if all required Tests, Modules, Reviews  and Designs of the feature are available "
+            }
+        }
+        stage('Build')
+        {
+            steps
+            {
+                echo "Build Project"
+            }
+        }
+        stage('Test & Analysis')
+        {
+            parallel
+            {
+                stage('Static Analysis')
+                {
+                    steps
+                    {
+                        echo "Static Analysis"
+                    }
+                }
+                stage('Unit Test (off target)')
+                {
+                    steps
+                    {
+                        echo "Unit Test"
+                    }
+                }
+            }
+        }
+        stage('Deploy')
+        {
+            steps
+            {
+                echo "Deploy" 
+            }
+        }
+    }
+    post
+    {
+        always {
+            echo 'Clean Up the workspace'
+            deleteDir()
+        }
+        success {
+            echo 'The pipe succeded'
+        }
+        unstable {
+            echo 'The pipe is unstable'
+        }
+        failure {
+            echo 'the pipe failed'
+        }
+    }
+}
