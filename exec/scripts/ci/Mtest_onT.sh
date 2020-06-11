@@ -19,14 +19,23 @@ ST-LINK_CLI -c -P output/onTarMTest/BasicFW.hex
 DEVICE=$(ls /dev/ | grep tty)
 
 # Reset Device
-ST-LINK_CLI -c -HRst
+ST-LINK_CLI -c -rst
+ST-LINK_CLI -c -run
 
+# Clear TTY Buffer
+:lClearOn
+    read LINE_RES < /dev/$DEVICE
+    echo $LINE_RES | grep <Done> && goto lRestart
+    goto lClearOn
 # Inspect Result
-:readOn
+:lRestart
+ST-LINK_CLI -c -rst
+ST-LINK_CLI -c -run
+:lReadOn
     read LINE_RES < /dev/$DEVICE
     echo $LINE_RES | grep Failed && goto lFailed
     echo $LINE_RES | grep <Done> && goto lSucc
-    goto readOn
+    goto lReadOn
 :lFailed
     return 1
 :lSucc
